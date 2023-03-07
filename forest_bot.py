@@ -3,7 +3,7 @@ from telebot.async_telebot import AsyncTeleBot
 import asyncio
 import time
 import urllib.request
-from dummy.controller import Controller, Artifact
+from ml_backend.controller import Controller, Artifact
 from threading import Thread
 from pathlib import Path
 
