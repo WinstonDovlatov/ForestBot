@@ -12,7 +12,7 @@ crop_size = 224
 photo_name = "example1.png"  # must be in input_photos folder
 
 
-def show(*args, **kwargs):
+def callback(*args, **kwargs):
     res = np.asarray(Image.open(Path(f"result_photos/{photo_name}".split('.')[0]).with_suffix('.jpg')).convert("RGB"))
     cv2.imshow("result", res)
     cv2.waitKey(0)
@@ -20,7 +20,7 @@ def show(*args, **kwargs):
 
 def predict(source: str) -> None:
     controller = Controller(
-        callback=show,
+        callback=callback,
         model_input_size=model_input_size,
         use_crop=use_crop,
         crop_size=crop_size if use_crop else None
