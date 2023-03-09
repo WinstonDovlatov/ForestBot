@@ -5,6 +5,8 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 import cv2
+import imutils
+
 
 model_input_size = 224
 use_crop = True
@@ -13,7 +15,11 @@ photo_name = "example1.png"  # must be in input_photos folder
 
 
 def callback(*args, **kwargs):
-    res = np.asarray(Image.open(Path(f"result_photos/{photo_name}".split('.')[0]).with_suffix('.jpg')).convert("RGB"))
+    res_path = Path(f"result_photos/{photo_name}".split('.')[0]).with_suffix('.jpg')
+    print(f"result saved in:\n{res_path}")
+    res = np.asarray(Image.open(res_path).convert("RGB"))
+    res = cv2.cvtColor(res, cv2.COLOR_BGR2RGB)
+    res = imutils.resize(res, width=1000)
     cv2.imshow("result", res)
     cv2.waitKey(0)
 
