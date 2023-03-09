@@ -5,3 +5,4 @@ torch~=1.13.1
 opencv-python~=4.5.2.52
 aiohttp
 torchvision
+tqdm

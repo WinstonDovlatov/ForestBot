@@ -12,7 +12,10 @@ class ForestBot:
     """
     Entity for interaction with Telegram users and their messages.
     """
-    max_attempts = 3  # Max number of attempts to send the result
+    max_attempts = 10  # Max number of attempts to send the result
+    model_input_size = 224
+    use_crop = True
+    crop_size = 224
 
     def __init__(self):
         # TODO: hide token to env
@@ -20,16 +23,19 @@ class ForestBot:
             token = token_file.readline()
 
         self.bot = telebot.TeleBot(token)
-        # self.bot = telebot.async_telebot.AsyncTeleBot(token)
         self.__init_messages()
         self.__add_handlers()
-        self.controller = Controller(self.__send_prediction_callback)
+        self.controller = Controller(
+            callback=self.__send_prediction_callback,
+            model_input_size=ForestBot.model_input_size,
+            use_crop=ForestBot.use_crop,
+            crop_size=ForestBot.crop_size if ForestBot.use_crop else None
+        )
+
         Thread(target=self.controller.observe_updates).start()
-        #Thread(target=asyncio.run, args=(self.controller.observe_updates(),)).start()
 
     def start(self) -> None:
-
-        # asyncio.run(self.bot.polling(none_stop=True))
+        """Start the bot. Thread will be captured"""
         self.bot.polling(none_stop=True)
 
     def __add_handlers(self) -> None:

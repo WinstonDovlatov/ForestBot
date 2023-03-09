@@ -1,30 +1,43 @@
-import numpy as np
-from path import Path
+from ml_backend.controller import Controller, Artifact
+from threading import Thread
+import os
+from pathlib import Path
 from PIL import Image
-from ml_backend.model import Model
-import ml_backend.utils
+import numpy as np
 import cv2
 
+model_input_size = 224
+use_crop = True
+crop_size = 224
+photo_name = "example1.png"  # must be in input_photos folder
 
-def predict(source: str, destination: str) -> None:
-    """
-    Prediction with crop without using TelegramBot
-    :param source: path to source img
-    :param destination: path to save result
-    """
-    raw_input = np.asarray(Image.open(Path(source)).convert("RGB"))
-    model_input = ml_backend.utils.preprocess(raw_input)
-    model = Model()
 
-    prediction = model.predict_proba_with_crop(model_input)
+def show(*args, **kwargs):
+    res = np.asarray(Image.open(Path(f"result_photos/{photo_name}".split('.')[0]).with_suffix('.jpg')).convert("RGB"))
+    cv2.imshow("result", res)
+    cv2.waitKey(0)
 
-    result = ml_backend.utils.postprocess(raw_input, prediction)
 
-    cv2.imwrite(str(destination), result)
+def predict(source: str) -> None:
+    controller = Controller(
+        callback=show,
+        model_input_size=model_input_size,
+        use_crop=use_crop,
+        crop_size=crop_size if use_crop else None
+    )
+    print("Started...")
+
+    Thread(target=controller.observe_updates).start()
+    controller.request_queue.put(Artifact(228, source))
 
 
 if __name__ == "__main__":
-    source_img_path = r"C:\Users\James_Kok\PycharmProjects\ForestBot\input_photos\input_image&id=447178684&time=1678364483460.png"
-    destination_path = "res.jpg"  # must be .jpg
-    predict(source_img_path, destination_path)
-    print("\n\n!!!DONE!!!")
+    if not os.path.exists("input_photos"):
+        os.makedirs("input_photos")
+
+    if not os.path.exists("result_photos"):
+        os.makedirs("result_photos")
+
+    predict(photo_name)
+
+
