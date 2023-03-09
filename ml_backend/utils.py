@@ -3,14 +3,27 @@ import cv2
 import torchvision
 import torch
 
+model_input_size = 224
+
+
+def align(size: int):
+    if size < model_input_size:
+        return model_input_size
+
+    if size % model_input_size < model_input_size / 2:
+        return (size // model_input_size) * model_input_size
+    else:
+        return (size // model_input_size + 1) * model_input_size
+
 
 def preprocess(image: np.ndarray):
-    with torch.inference_mode():
-        to_tensor = torchvision.transforms.ToTensor()
-        image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_NEAREST)
-        image = to_tensor((image.astype(np.float32) / 255.0)).unsqueeze(0)
-        image = image.to("cpu")
-        return image
+    image = cv2.resize(
+        image,
+        (align(image.shape[0]), align(image.shape[1])),
+        interpolation=cv2.INTER_NEAREST
+    )
+    image = image.astype(np.float32) / 255.0
+    return image
 
 
 def postprocess(original_img: np.ndarray, prediction: np.ndarray) -> np.ndarray:

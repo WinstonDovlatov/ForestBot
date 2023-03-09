@@ -30,10 +30,11 @@ class Controller:
     def __analyse_image(self):
         current = Controller.request_queue.get()
         raw_input = np.asarray(Image.open(Path(f"input_photos/{current.img_name}")).convert("RGB"))
-        model_input = ml_backend.utils.preprocess(raw_input)
-        prediction = self.model.predict_proba(model_input)
 
+        model_input = ml_backend.utils.preprocess(raw_input)
+        prediction = self.model.predict_proba_with_crop(model_input)
         result = ml_backend.utils.postprocess(raw_input, prediction)
+
         result_path = Path(f"result_photos/{current.img_name}").with_suffix(".jpg")
         cv2.imwrite(str(result_path), result)
 

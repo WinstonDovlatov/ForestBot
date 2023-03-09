@@ -90,9 +90,8 @@ class ForestBot:
         :param Path result_path: path to the result image
         :param int chat_id: chat id
         """
-        # Thread(target=self.__send_result_with_retry, args=[result_path, chat_id]).start()
-        # TODO: 2 methods -> 1 method if use async instead of threading
-        self.__send_result_with_retry(result_path, chat_id)
+        Thread(target=self.__send_result_with_retry, args=[result_path, chat_id]).start()
+        # self.__send_result_with_retry(result_path, chat_id)
 
     def __send_result_with_retry(self, result_path: Path, chat_id: int, attempt: int = 0) -> None:
         """
