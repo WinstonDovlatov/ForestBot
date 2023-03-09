@@ -1,7 +1,5 @@
 import numpy as np
 import cv2
-import torchvision
-import torch
 
 model_input_size = 224
 

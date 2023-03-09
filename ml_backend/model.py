@@ -2,6 +2,7 @@ import segmentation_models_pytorch as smp
 import torch
 import numpy as np
 import torchvision
+from tqdm import tqdm
 
 
 class Model:
@@ -16,7 +17,7 @@ class Model:
     def predict_proba_with_crop(self, input: np.ndarray):
         to_tensor = torchvision.transforms.ToTensor()
         lines = []
-        for i in np.arange(input.shape[0] // 224):
+        for i in tqdm(np.arange(input.shape[0] // 224)):
             line = []
             for j in np.arange(input.shape[1] // 224):
                 crop = input[i * 224:(i + 1) * 224, j * 224:(j + 1) * 224]
