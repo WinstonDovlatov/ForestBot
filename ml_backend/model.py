@@ -2,8 +2,9 @@ import segmentation_models_pytorch as smp
 import torch
 import numpy as np
 import torchvision
-from tqdm import tqdm
 from ml_backend.utils import resize_to_model_input
+import time
+from tqdm import tqdm
 
 
 class Model:
@@ -22,23 +23,27 @@ class Model:
         :param int crop_size: size of each crop
         :return np.ndarray: prediction result
         """
+        start = time.time()
         to_tensor = torchvision.transforms.ToTensor()
-        lines = []
-        for i in tqdm(np.arange(input.shape[0] // crop_size)):
-            line = []
+        crops = []
+        for i in np.arange(input.shape[0] // crop_size):
             for j in np.arange(input.shape[1] // crop_size):
                 crop = input[
                        i * crop_size:(i + 1) * crop_size,
-                       j * crop_size:(j + 1) * crop_size
-                       ]
+                       j * crop_size:(j + 1) * crop_size]
                 crop = resize_to_model_input(crop, self.input_size)
-                with torch.inference_mode():
-                    model_input = to_tensor(crop).unsqueeze(0).to('cpu')
-                    model_output = self.model(model_input).detach().cpu().numpy().squeeze()
-                line.append(model_output)
-            lines.append(line)
+                crops.append(to_tensor(crop).unsqueeze(0).to('cpu'))
+        with torch.inference_mode():
+            batch = torch.cat(crops)
+            results = self.model(batch).detach().cpu().numpy().squeeze()
 
-        result = np.block(lines)
+        line_length = input.shape[1] // crop_size
+        lines = []
+        for i in np.arange(input.shape[0] // crop_size):
+            lines.append(np.hstack(results[i * line_length: (i + 1) * line_length]))
+        result = np.vstack(lines)
+
+        print(f"{time.time() - start:.2f}")
         return result
 
     def predict_proba(self, input: np.ndarray) -> np.ndarray:

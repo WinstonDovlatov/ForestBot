@@ -7,7 +7,6 @@ import numpy as np
 import cv2
 import imutils
 
-
 model_input_size = 224
 use_crop = True
 crop_size = 224
@@ -38,12 +37,26 @@ def predict(source: str) -> None:
 
 
 if __name__ == "__main__":
-    if not os.path.exists("input_photos"):
-        os.makedirs("input_photos")
+    # if not os.path.exists("input_photos"):
+    #     os.makedirs("input_photos")
+    #
+    # if not os.path.exists("result_photos"):
+    #     os.makedirs("result_photos")
+    #
+    # predict(photo_name)
+    from pathlib import Path
+    import ee
+    import time
+    from satelline.satellite_data import download_rect
 
-    if not os.path.exists("result_photos"):
-        os.makedirs("result_photos")
+    #ee.Authenticate()
 
-    predict(photo_name)
+    ee.Initialize(project="forest-bot-browser-proj")
+
+
+    #ee.Initialize()
+
+    download_rect("test", (47.325740342165716, 12.783691341940417), 0.1, Path("./test/"))
+
 
 

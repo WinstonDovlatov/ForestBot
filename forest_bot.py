@@ -4,6 +4,8 @@ import asyncio
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
+from utils import get_radius_from_msg, get_cords_from_msg
+from satelline.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
 
@@ -16,12 +18,17 @@ class ForestBot:
     model_input_size = 224
     use_crop = True
     crop_size = 224
+    default_radius = 0.02
+    max_radius = 1
+    min_radius = 0.01
 
     def __init__(self):
         # TODO: hide token to env
         with open("token.txt", 'r') as token_file:
             token = token_file.readline()
 
+        # TODO: save + load from save. make static?
+        self.user_radiuses = dict()
         self.bot = telebot.TeleBot(token)
         self.__init_messages()
         self.__add_handlers()
@@ -45,10 +52,23 @@ class ForestBot:
         def handle_start_message(message) -> None:
             self.bot.send_message(message.chat.id, self.start_message)
 
-        def test_document_message_is_image(message):
-            return message.document.mime_type.split('/')[0] == 'image'
+        @self.bot.message_handler(commands=['set_radius'])
+        def handle_change_radius_message(message) -> None:
+            # TODO: degree -> km. Text?
+            wrong_command_message = "Для изменения радиуса снимка используйте команду таким образом:\n/set_radius " \
+                                    f"{{число в пределах [{ForestBot.min_radius}, {ForestBot.max_radius}]}}\n\n" \
+                                    "Пример:\n/set_radius 0.5"
+            success, custom_radius = get_radius_from_msg(
+                message=message, min_value=ForestBot.min_radius, max_value=ForestBot.max_radius)
 
-        @self.bot.message_handler(func=test_document_message_is_image, content_types=['document'])
+            if not success:
+                self.bot.send_message(message.chat.id, wrong_command_message)
+            else:
+                self.user_radiuses[message.chat.id] = custom_radius
+                self.bot.send_message(message.chat.id,
+                                      f"Радиус снимка успешно установлен: {round(custom_radius, 5)}°")
+
+        @self.bot.message_handler(func=ForestBot.__test_document_message_is_image, content_types=['document'])
         @self.bot.message_handler(content_types=['photo'])
         def handle_photo_message(message) -> None:
             self.bot.send_message(message.chat.id, self.accept_photo_message)
@@ -71,6 +91,40 @@ class ForestBot:
 
             # A pair of image and id is added to the processing queue
             self.controller.request_queue.put(Artifact(message.chat.id, image_name))
+
+        @self.bot.message_handler(content_types=['text'])
+        def handle_cords_message(message) -> None:
+            wrong_cords_message = "Для получения снимка с найденными дорогами отправьте сообщение " \
+                                  "с координатами в следующем формате:\n" \
+                                  "cord1, cord2\n\n" \
+                                  "Пример:\n" \
+                                  "47.325740342165716, 12.783691341940417"
+            success, cords = get_cords_from_msg(message.text)
+            if not success:
+                self.bot.send_message(message.chat.id, wrong_cords_message)
+            else:
+                self.bot.send_message(message.chat.id, "Ваши координаты приняты. Начинаем обработку...")
+                image_name = f"input_image&id={message.chat.id}&time={round(time.time() * 1000)}.jpg"
+                radius = ForestBot.default_radius if message.chat.id not in self.user_radiuses else \
+                    self.user_radiuses[message.chat.id]
+                Thread(
+                    target=self.__parallel_load_image,
+                    kwargs={
+                        'image_name': image_name,
+                        'cords': cords,
+                        'radius': radius,
+                        'download_dir': Path("input_photos"),
+                        'chat_id': message.chat.id
+                    }
+                ).start()
+
+    def __parallel_load_image(self, image_name, cords, radius, download_dir, chat_id):
+        download_rect(image_name=image_name, center=cords, radius=radius, download_dir=download_dir)
+        self.controller.request_queue.put(Artifact(chat_id, image_name))
+
+    @staticmethod
+    def __test_document_message_is_image(message):
+        return message.document.mime_type.split('/')[0] == 'image'
 
     def __init_messages(self) -> None:
         """Loads basic messages from files."""
