@@ -16,34 +16,59 @@ class Model:
         self.model.eval()
         self.input_size = input_size
 
+    @staticmethod
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+
+    # def predict_proba_crop(self, input: np.ndarray, crop_size: int) -> np.ndarray:
+    #     """
+    #     Predict with cropping
+    #     :param np.ndarray input: preprocessed image
+    #     :param int crop_size: size of each crop
+    #     :return np.ndarray: prediction result
+    #     """
+    #     start = time.time()
+    #     to_tensor = torchvision.transforms.ToTensor()
+    #     crops = []
+    #     print(f"crop: [{input.shape[0] // crop_size}, {input.shape[0] // crop_size}]")
+    #     for i in np.arange(input.shape[0] // crop_size):
+    #         for j in np.arange(input.shape[1] // crop_size):
+    #             crop = input[
+    #                    i * crop_size:(i + 1) * crop_size,
+    #                    j * crop_size:(j + 1) * crop_size]
+    #             crop = resize_to_model_input(crop, self.input_size)
+    #             crops.append(to_tensor(crop).unsqueeze(0).to('cpu'))
+    #     with torch.inference_mode():
+    #         batch = torch.cat(crops)
+    #         results = self.model(batch).detach().cpu().numpy().squeeze()
+    #
+    #     line_length = input.shape[1] // crop_size
+    #     lines = []
+    #     for i in np.arange(input.shape[0] // crop_size):
+    #         lines.append(np.hstack(results[i * line_length: (i + 1) * line_length]))
+    #     result = np.vstack(lines)
+    #
+    #     print(f"{time.time() - start:.2f}")
+    #     return result
+
     def predict_proba_crop(self, input: np.ndarray, crop_size: int) -> np.ndarray:
-        """
-        Predict with cropping
-        :param np.ndarray input: preprocessed image
-        :param int crop_size: size of each crop
-        :return np.ndarray: prediction result
-        """
-        start = time.time()
         to_tensor = torchvision.transforms.ToTensor()
-        crops = []
-        for i in np.arange(input.shape[0] // crop_size):
+        lines = []
+        for i in tqdm(np.arange(input.shape[0] // crop_size)):
+            line = []
             for j in np.arange(input.shape[1] // crop_size):
                 crop = input[
                        i * crop_size:(i + 1) * crop_size,
-                       j * crop_size:(j + 1) * crop_size]
+                       j * crop_size:(j + 1) * crop_size
+                       ]
                 crop = resize_to_model_input(crop, self.input_size)
-                crops.append(to_tensor(crop).unsqueeze(0).to('cpu'))
-        with torch.inference_mode():
-            batch = torch.cat(crops)
-            results = self.model(batch).detach().cpu().numpy().squeeze()
+                with torch.inference_mode():
+                    model_input = to_tensor(crop).unsqueeze(0).to('cpu')
+                    model_output = self.model(model_input).detach().cpu().numpy().squeeze()
+                line.append(model_output)
+            lines.append(line)
 
-        line_length = input.shape[1] // crop_size
-        lines = []
-        for i in np.arange(input.shape[0] // crop_size):
-            lines.append(np.hstack(results[i * line_length: (i + 1) * line_length]))
-        result = np.vstack(lines)
-
-        print(f"{time.time() - start:.2f}")
+        result = Model.sigmoid(np.block(lines))
         return result
 
     def predict_proba(self, input: np.ndarray) -> np.ndarray:
@@ -56,4 +81,4 @@ class Model:
             to_tensor = torchvision.transforms.ToTensor()
             model_input = to_tensor(input).unsqueeze(0).to('cpu')
             result = self.model(model_input).detach().cpu().numpy().squeeze()
-            return result
+            return Model.sigmoid(result)

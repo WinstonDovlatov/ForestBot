@@ -4,10 +4,11 @@ import asyncio
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
-from utils import get_radius_from_msg, get_cords_from_msg
+from utils import get_radius_from_msg, get_cords_from_msg, is_float
 from satelline.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
+from ml_backend.utils import Threshold
 
 
 class ForestBot:
@@ -19,7 +20,7 @@ class ForestBot:
     use_crop = True
     crop_size = 224
     default_radius = 0.02
-    max_radius = 1
+    max_radius = 0.05
     min_radius = 0.01
 
     def __init__(self):
@@ -47,6 +48,22 @@ class ForestBot:
 
     def __add_handlers(self) -> None:
         """Method for initialize message handlers from Telegram."""
+
+        @self.bot.message_handler(commands=['set_threshold'])
+        def handle_debug(message) -> None:
+            msg_wrong = "Начудил...\nДелай так:\n/set_threshold 0.25"
+            words = message.text.split(' ')
+            if len(words) != 2:
+                self.bot.send_message(message.chat.id, msg_wrong)
+                return
+
+            if not is_float(words[1]):
+                self.bot.send_message(message.chat.id, msg_wrong)
+                return
+
+            new_threshold = float(words[1])
+            Threshold.threshold = new_threshold
+            self.bot.send_message(message.chat.id, f"Установлен новый трешхолд: {new_threshold}")
 
         @self.bot.message_handler(commands=['start'])
         def handle_start_message(message) -> None:

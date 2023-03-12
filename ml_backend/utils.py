@@ -2,6 +2,13 @@ import numpy as np
 import cv2
 
 
+class Threshold:
+    threshold = 0.2
+    @staticmethod
+    def set_threshold(new_val):
+        Threshold.threshold = new_val
+
+
 def align(size: int, target_size: int) -> int:
     """
     Bring the number to target_size * n
@@ -56,11 +63,10 @@ def postprocess(original_img: np.ndarray, prediction: np.ndarray) -> np.ndarray:
     :param np.ndarray prediction: model prediction
     :return np.ndarray: combined prediction and image
     """
-    threshold = 0.01
     cool_color_bgr = [235, 56, 226]
 
-    prediction[prediction < threshold] = 0
-    prediction[prediction >= threshold] = 1
+    prediction[prediction < Threshold.threshold] = 0
+    prediction[prediction >= Threshold.threshold] = 1
     prediction = (prediction * 255).astype("uint8")
 
     roads = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGR)
