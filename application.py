@@ -1,4 +1,4 @@
-from forest_bot import ForestBot
+from forest_bot_front.forest_bot import ForestBot
 import os
 import time
 

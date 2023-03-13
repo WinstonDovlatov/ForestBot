@@ -2,7 +2,7 @@ import telebot
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
-from utils import get_radius_from_msg, get_cords_from_msg, is_float
+from forest_bot_front.utils import get_radius_from_msg, get_cords_from_msg, is_float
 from satelline.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
@@ -23,7 +23,7 @@ class ForestBot:
 
     def __init__(self):
         # TODO: hide token to env
-        with open("token.txt", 'r') as token_file:
+        with open(Path("forest_bot_front/token.txt"), 'r') as token_file:
             token = token_file.readline()
 
         # TODO: save + load from save. make static?
@@ -133,7 +133,7 @@ class ForestBot:
                 'image_name': image_name,
                 'cords': cords,
                 'radius': radius,
-                'download_dir': Path("input_photos"),
+                'download_dir': Path("../input_photos"),
                 'chat_id': chat_id
             }
         ).start()
@@ -155,22 +155,22 @@ class ForestBot:
     def __init_messages(self) -> None:
         """Loads basic messages from files."""
         # TODO: do DRY. JSON?
-        with open("messages/start_message.txt", encoding="UTF-8") as f:
+        with open("forest_bot_front/messages/start_message.txt", encoding="UTF-8") as f:
             self.start_message = f.read()
 
-        with open("messages/accept_photo_message.txt", encoding="UTF-8") as f:
+        with open("forest_bot_front/messages/accept_photo_message.txt", encoding="UTF-8") as f:
             self.accept_photo_message = f.read()
 
-        with open("messages/accept_cords_message.txt", encoding="UTF-8") as f:
+        with open("forest_bot_front/messages/accept_cords_message.txt", encoding="UTF-8") as f:
             self.accept_cords_message = f.read()
 
-        with open("messages/ready_img_message.txt", encoding="UTF-8") as f:
+        with open("forest_bot_front/messages/ready_img_message.txt", encoding="UTF-8") as f:
             self.ready_img_message = f.read()
 
-        with open("messages/failed_to_send_img_message.txt", encoding="UTF-8") as f:
+        with open("forest_bot_front/messages/failed_to_send_img_message.txt", encoding="UTF-8") as f:
             self.failed_to_send_message = f.read()
 
-        with open("messages/wrong_cords_message.txt", encoding="UTF-8") as f:
+        with open("forest_bot_front/messages/wrong_cords_message.txt", encoding="UTF-8") as f:
             self.wrong_cords_message = f.read()
 
     def __get_threshold(self, chat_id: int) -> float:
