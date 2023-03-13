@@ -2,7 +2,7 @@ import telebot
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
-from utils import get_number_from_msg, get_cords_from_msg, is_float
+from utils import get_radius_from_msg, get_cords_from_msg, is_float
 from satelline.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
@@ -73,7 +73,7 @@ class ForestBot:
             wrong_command_message = "Для изменения радиуса снимка используйте команду таким образом:\n/set_radius " \
                                     f"{{число в пределах [{ForestBot.min_radius}, {ForestBot.max_radius}]}}\n\n" \
                                     "Пример:\n/set_radius 0.5"
-            success, custom_radius = get_number_from_msg(
+            success, custom_radius = get_radius_from_msg(
                 message=message, min_value=ForestBot.min_radius, max_value=ForestBot.max_radius)
 
             if not success:
