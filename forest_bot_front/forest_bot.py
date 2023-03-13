@@ -67,6 +67,11 @@ class ForestBot:
         def handle_start_message(message) -> None:
             self.bot.send_message(message.chat.id, self.start_message)
 
+        @self.bot.message_handler(commands=['help'])
+        def handle_start_message(message) -> None:
+            # TODO: Написать /help
+            self.bot.send_message(message.chat.id, "Нормально делай - нормально будет")
+
         @self.bot.message_handler(commands=['set_radius'])
         def handle_change_radius_message(message) -> None:
             # TODO: degree -> km. Text?
