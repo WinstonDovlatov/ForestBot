@@ -138,7 +138,7 @@ class ForestBot:
                 'image_name': image_name,
                 'cords': cords,
                 'radius': radius,
-                'download_dir': Path("../input_photos"),
+                'download_dir': Path("input_photos"),
                 'chat_id': chat_id
             }
         ).start()
