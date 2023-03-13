@@ -1,6 +1,4 @@
 import telebot
-from telebot.async_telebot import AsyncTeleBot
-import asyncio
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
@@ -47,10 +45,11 @@ class ForestBot:
         self.bot.polling(none_stop=True)
 
     def __add_handlers(self) -> None:
-        """Method for initialize message handlers from Telegram."""
+        """Method for initialize message handlers from Telegram bot"""
 
         @self.bot.message_handler(commands=['set_threshold'])
-        def handle_debug(message) -> None:
+        def handle_threshold(message) -> None:
+            # DEBUG ONLY
             msg_wrong = "Начудил...\nДелай так:\n/set_threshold 0.25"
             words = message.text.split(' ')
             if len(words) != 2:
@@ -110,38 +109,49 @@ class ForestBot:
             self.controller.request_queue.put(Artifact(message.chat.id, image_name))
 
         @self.bot.message_handler(content_types=['text'])
-        def handle_cords_message(message) -> None:
-            wrong_cords_message = "Для получения снимка с найденными дорогами отправьте сообщение " \
-                                  "с координатами в следующем формате:\n" \
-                                  "cord1, cord2\n\n" \
-                                  "Пример:\n" \
-                                  "47.325740342165716, 12.783691341940417"
+        def handle_text_cords_message(message) -> None:
+            # TODO: make queue for anti-DDOS
             success, cords = get_cords_from_msg(message.text)
             if not success:
-                self.bot.send_message(message.chat.id, wrong_cords_message)
+                self.bot.send_message(message.chat.id, self.wrong_cords_message)
             else:
-                self.bot.send_message(message.chat.id, "Ваши координаты приняты. Начинаем обработку...")
-                image_name = f"input_image&id={message.chat.id}&time={round(time.time() * 1000)}.jpg"
-                radius = ForestBot.default_radius if message.chat.id not in self.user_radiuses else \
-                    self.user_radiuses[message.chat.id]
-                Thread(
-                    target=self.__parallel_load_image,
-                    kwargs={
-                        'image_name': image_name,
-                        'cords': cords,
-                        'radius': radius,
-                        'download_dir': Path("input_photos"),
-                        'chat_id': message.chat.id
-                    }
-                ).start()
+                self.__handle_cords_input(chat_id=message.chat.id, cords=cords)
 
-    def __parallel_load_image(self, image_name, cords, radius, download_dir, chat_id):
-        download_rect(image_name=image_name, center=cords, radius=radius, download_dir=download_dir)
-        self.controller.request_queue.put(Artifact(chat_id, image_name))
+        @self.bot.message_handler(content_types=['location'])
+        def handle_location_message(message) -> None:
+            self.__handle_cords_input(chat_id=message.chat.id,
+                                      cords=(message.location.latitude, message.location.longitude))
+
+    def __handle_cords_input(self, chat_id, cords):
+        self.bot.send_message(chat_id, "Ваши координаты приняты. Начинаем обработку...")
+        image_name = f"input_image&id={chat_id}&time={round(time.time() * 1000)}.png"
+        radius = ForestBot.default_radius if chat_id not in self.user_radiuses else \
+            self.user_radiuses[chat_id]
+
+        Thread(
+            target=self.__parallel_load_satellite_image,
+            kwargs={
+                'image_name': image_name,
+                'cords': cords,
+                'radius': radius,
+                'download_dir': Path("input_photos"),
+                'chat_id': chat_id
+            }
+        ).start()
 
     @staticmethod
-    def __test_document_message_is_image(message):
+    def __test_document_message_is_image(message) -> bool:
         return message.document.mime_type.split('/')[0] == 'image'
+
+    def __parallel_load_satellite_image(self, image_name, cords, radius, download_dir, chat_id):
+        try:
+            transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
+                                           download_dir=download_dir)
+            self.controller.request_queue.put(Artifact(chat_id, image_name))
+        except Exception as ex:
+            print(f"Failed to load satellite images:\n{ex}")
+            self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
+                                           "Вы - отважный путешественник, раз решили отправиться туда!")
 
     def __init_messages(self) -> None:
         """Loads basic messages from files."""
@@ -161,6 +171,9 @@ class ForestBot:
         with open("messages/failed_to_send_img_message.txt", encoding="UTF-8") as f:
             self.failed_to_send_message = f.read()
 
+        with open("messages/wrong_cords_message.txt", encoding="UTF-8") as f:
+            self.wrong_cords_message = f.read()
+
     def __send_prediction_callback(self, result_path: Path, chat_id: int) -> None:
         """
         Callback for completed prediction.
@@ -168,7 +181,6 @@ class ForestBot:
         :param int chat_id: chat id
         """
         Thread(target=self.__send_result_with_retry, args=[result_path, chat_id]).start()
-        # self.__send_result_with_retry(result_path, chat_id)
 
     def __send_result_with_retry(self, result_path: Path, chat_id: int, attempt: int = 0) -> None:
         """

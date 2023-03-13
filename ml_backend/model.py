@@ -68,8 +68,8 @@ class Model:
                 line.append(model_output)
             lines.append(line)
 
-        result = Model.sigmoid(np.block(lines))
-        return result
+        result = np.block(lines)
+        return Model.sigmoid(result)
 
     def predict_proba(self, input: np.ndarray) -> np.ndarray:
         """

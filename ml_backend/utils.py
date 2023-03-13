@@ -3,10 +3,8 @@ import cv2
 
 
 class Threshold:
+    # DEBUG (?)
     threshold = 0.2
-    @staticmethod
-    def set_threshold(new_val):
-        Threshold.threshold = new_val
 
 
 def align(size: int, target_size: int) -> int:

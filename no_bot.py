@@ -1,3 +1,6 @@
+# Данный файл предоставляет возможность тестировать модель без использования бота
+
+
 from ml_backend.controller import Controller, Artifact
 from threading import Thread
 import os
@@ -37,26 +40,10 @@ def predict(source: str) -> None:
 
 
 if __name__ == "__main__":
-    # if not os.path.exists("input_photos"):
-    #     os.makedirs("input_photos")
-    #
-    # if not os.path.exists("result_photos"):
-    #     os.makedirs("result_photos")
-    #
-    # predict(photo_name)
-    from pathlib import Path
-    import ee
-    import time
-    from satelline.satellite_data import download_rect
+    if not os.path.exists("input_photos"):
+        os.makedirs("input_photos")
 
-    #ee.Authenticate()
+    if not os.path.exists("result_photos"):
+        os.makedirs("result_photos")
 
-    ee.Initialize(project="forest-bot-browser-proj")
-
-
-    #ee.Initialize()
-
-    download_rect("test", (47.325740342165716, 12.783691341940417), 0.1, Path("./test/"))
-
-
-
+    predict(photo_name)
