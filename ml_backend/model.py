@@ -1,7 +1,5 @@
 import segmentation_models_pytorch as smp
-import torch
 import numpy as np
-import torchvision
 from ml_backend.utils import resize_to_model_input
 from pathlib import Path
 from tqdm import tqdm
@@ -24,9 +22,7 @@ class Model:
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
-
     def predict_proba_crop(self, input: np.ndarray, crop_size: int) -> np.ndarray:
-        to_tensor = torchvision.transforms.ToTensor()
         lines = []
         for i in tqdm(np.arange(input.shape[0] // crop_size)):
             line = []
@@ -44,8 +40,8 @@ class Model:
                 line.append(model_output)
             lines.append(line)
 
-        result = np.block(lines)
-        return Model.sigmoid(result)
+        result = Model.sigmoid(np.block(lines))
+        return result
 
     def predict_proba(self, input: np.ndarray) -> np.ndarray:
         # TODO: я это не тестил

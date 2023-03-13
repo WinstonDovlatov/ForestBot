@@ -36,7 +36,6 @@ def download_rect(image_name, center: (float, float), radius: float, download_di
     The downloaded image will be at download_dir/{image_name}
     Note: Format(.jpg, .png) must be specified in image_name
     """
-    print(center)
     left, bottom, right, top = center[1] - radius, center[0] - radius, center[1] + radius, center[0] + radius
     region = RegionST(name=image_name,
                       bbox=[left, bottom, right, top],

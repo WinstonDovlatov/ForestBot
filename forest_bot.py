@@ -2,11 +2,10 @@ import telebot
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
-from utils import get_radius_from_msg, get_cords_from_msg, is_float
+from utils import get_number_from_msg, get_cords_from_msg, is_float
 from satelline.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
-from ml_backend.utils import Threshold
 
 
 class ForestBot:
@@ -20,6 +19,7 @@ class ForestBot:
     default_radius = 0.02
     max_radius = 0.05
     min_radius = 0.01
+    default_threshold = 0.2
 
     def __init__(self):
         # TODO: hide token to env
@@ -28,6 +28,7 @@ class ForestBot:
 
         # TODO: save + load from save. make static?
         self.user_radiuses = dict()
+        self.user_thresholds = dict()
         self.bot = telebot.TeleBot(token)
         self.__init_messages()
         self.__add_handlers()
@@ -48,21 +49,19 @@ class ForestBot:
         """Method for initialize message handlers from Telegram bot"""
 
         @self.bot.message_handler(commands=['set_threshold'])
+        @self.bot.message_handler(commands=['set_sensitivity'])
         def handle_threshold(message) -> None:
-            # DEBUG ONLY
-            msg_wrong = "Начудил...\nДелай так:\n/set_threshold 0.25"
+            msg_wrong = "Для установки чувствительности введите число" \
+                        " в диапазоне от 0 до 1. Чем больше чувствительность, тем больше потенциальных дорог будет" \
+                        "обнаружено \n\nПример:\n/set_sensitivity 0.2"
             words = message.text.split(' ')
-            if len(words) != 2:
+            if len(words) != 2 or not is_float(words[1]) or not 0 < float(words[1]) < 1:
                 self.bot.send_message(message.chat.id, msg_wrong)
-                return
-
-            if not is_float(words[1]):
-                self.bot.send_message(message.chat.id, msg_wrong)
-                return
-
-            new_threshold = float(words[1])
-            Threshold.threshold = new_threshold
-            self.bot.send_message(message.chat.id, f"Установлен новый трешхолд: {new_threshold}")
+            else:
+                # higher sensitivity => lower trashhold
+                new_threshold = 1 - float(words[1])
+                self.user_thresholds[message.chat.id] = new_threshold
+                self.bot.send_message(message.chat.id, f"Установлена новая чувствительность: {new_threshold}")
 
         @self.bot.message_handler(commands=['start'])
         def handle_start_message(message) -> None:
@@ -74,7 +73,7 @@ class ForestBot:
             wrong_command_message = "Для изменения радиуса снимка используйте команду таким образом:\n/set_radius " \
                                     f"{{число в пределах [{ForestBot.min_radius}, {ForestBot.max_radius}]}}\n\n" \
                                     "Пример:\n/set_radius 0.5"
-            success, custom_radius = get_radius_from_msg(
+            success, custom_radius = get_number_from_msg(
                 message=message, min_value=ForestBot.min_radius, max_value=ForestBot.max_radius)
 
             if not success:
@@ -104,9 +103,9 @@ class ForestBot:
             file_info = self.bot.get_file(file_id)
             file_url = f'https://api.telegram.org/file/bot{self.bot.token}/{file_info.file_path}'
             urllib.request.urlretrieve(file_url, f"input_photos/{image_name}")
-
+            chat_id = message.chat.id
             # A pair of image and id is added to the processing queue
-            self.controller.request_queue.put(Artifact(message.chat.id, image_name))
+            self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
 
         @self.bot.message_handler(content_types=['text'])
         def handle_text_cords_message(message) -> None:
@@ -147,7 +146,7 @@ class ForestBot:
         try:
             transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
                                            download_dir=download_dir)
-            self.controller.request_queue.put(Artifact(chat_id, image_name))
+            self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
         except Exception as ex:
             print(f"Failed to load satellite images:\n{ex}")
             self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
@@ -173,6 +172,12 @@ class ForestBot:
 
         with open("messages/wrong_cords_message.txt", encoding="UTF-8") as f:
             self.wrong_cords_message = f.read()
+
+    def __get_threshold(self, chat_id: int) -> float:
+        if chat_id in self.user_thresholds:
+            return self.user_thresholds[chat_id]
+        else:
+            return self.default_threshold
 
     def __send_prediction_callback(self, result_path: Path, chat_id: int) -> None:
         """

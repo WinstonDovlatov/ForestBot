@@ -10,9 +10,10 @@ import warnings
 
 
 class Artifact:
-    def __init__(self, chat_id, img_name):
+    def __init__(self, chat_id, img_name, threshold):
         self.chat_id = chat_id
         self.img_name = img_name
+        self.threshold = threshold
 
 
 class Controller:
@@ -56,7 +57,7 @@ class Controller:
             model_input = ml_backend.utils.resize_to_model_input(model_input, self.crop_size)
             prediction = self.model.predict_proba(model_input)
 
-        result = ml_backend.utils.postprocess(raw_input, prediction)
+        result = ml_backend.utils.postprocess(raw_input, prediction, current.threshold)
 
         result_path = Path(f"result_photos/{current.img_name}").with_suffix(".jpg")
         cv2.imwrite(str(result_path), result)

@@ -18,10 +18,10 @@ def is_float(inp: str) -> bool:
         return False
 
 
-def get_radius_from_msg(message: str, min_value: float, max_value: float) -> Tuple[bool, Union[float, None]]:
+def get_number_from_msg(message, min_value: float, max_value: float) -> Tuple[bool, Union[float, None]]:
     """
     Extract radius value from /set_radius message if it is possible
-    :param message: input message from bot
+    :param message: input message from telebot
     :param min_value: minimum allowable value
     :param max_value: maximum allowable value
     :return: (True, radius) if radius could be extracted and allowable. (False, None) otherwise
