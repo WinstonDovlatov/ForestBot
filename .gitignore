@@ -1,6 +1,7 @@
 input_photos
 result_photos
 token.txt
-ml_backend/model_epoch059_loss0.pt
+processes/model_epoch059_loss0.pt
+processes/model.onnx
 __pycache__
 .idea
