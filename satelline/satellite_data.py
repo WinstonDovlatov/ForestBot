@@ -11,8 +11,8 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 products = ["COPERNICUS/S2"]
 bands = ['B4', 'B3', 'B2']  # Red, Green, Blue
 dst_crs = 'EPSG:3857'
-time_start = '2020-06-01'
-time_end = '2020-06-25'
+time_start = '2020-05-01'
+time_end = '2020-09-25'
 
 brightness = 4
 
@@ -45,7 +45,7 @@ def download_rect(image_name, center: (float, float), radius: float, download_di
 
     time_window = region.times[0], region.times[-1]
     temp_folder = download_dir / f"temp_{image_name}"
-    download_data(region, time_window, products, bands, temp_folder, use_least_cloudy=3, download_crop_size=1000)
+    download_data(region, time_window, products, bands, temp_folder, use_least_cloudy=5, download_crop_size=1000)
     with rasterio.open(temp_folder / f'{image_name}.download.B2.tif') as b2_raster:
         b2_data = b2_raster.read()
         orig_transform = b2_raster.transform
