@@ -124,7 +124,7 @@ class ForestBot:
 
             self.bot.send_message(message.chat.id, self.accept_photo_message)
             # Generate unique name for image
-            image_name = f"input_image&id={message.chat.id}&time={round(time.time() * 1000)}.{file_format}"
+            image_name = f"input_image&id={message.chat.id}&time={round(time.time() * 100000)}.{file_format}"
 
             file_info = self.bot.get_file(file_id)
             file_url = f'https://api.telegram.org/file/bot{self.bot.token}/{file_info.file_path}'
@@ -172,7 +172,7 @@ class ForestBot:
 
     def __handle_cords_input(self, chat_id, cords):
         Thread(target=self.__send_loading_animation_message, kwargs={'chat_id': chat_id}).start()
-        image_name = f"input_image&id={chat_id}&time={round(time.time() * 1000)}.png"
+        image_name = f"input_image&id={chat_id}&time={round(time.time() * 100000)}.png"
         radius = ForestBot.default_radius_deg if chat_id not in self.user_radiuses_deg else \
             self.user_radiuses_deg[chat_id]
 
