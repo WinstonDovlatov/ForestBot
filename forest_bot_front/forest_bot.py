@@ -1,4 +1,5 @@
 import telebot
+from forest_bot_front.bot_common import test_document_message_is_image, generate_buttons
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
@@ -20,6 +21,7 @@ class ForestBot:
     max_radius = 0.05
     min_radius = 0.01
     default_threshold = 0.2
+    out_date_time = 60 * 10  # in seconds
 
     def __init__(self):
         # TODO: hide token to env
@@ -68,7 +70,7 @@ class ForestBot:
             self.bot.send_message(message.chat.id, self.start_message)
 
         @self.bot.message_handler(commands=['help'])
-        def handle_start_message(message) -> None:
+        def handle_help_message(message) -> None:
             # TODO: Написать /help
             self.bot.send_message(message.chat.id, "Нормально делай - нормально будет")
 
@@ -88,7 +90,7 @@ class ForestBot:
                 self.bot.send_message(message.chat.id,
                                       f"Радиус снимка успешно установлен: {round(custom_radius, 5)}°")
 
-        @self.bot.message_handler(func=ForestBot.__test_document_message_is_image, content_types=['document'])
+        @self.bot.message_handler(func=test_document_message_is_image, content_types=['document'])
         @self.bot.message_handler(content_types=['photo'])
         def handle_photo_message(message) -> None:
             self.bot.send_message(message.chat.id, self.accept_photo_message)
@@ -126,14 +128,36 @@ class ForestBot:
             self.__handle_cords_input(chat_id=message.chat.id,
                                       cords=(message.location.latitude, message.location.longitude))
 
+        @self.bot.callback_query_handler(func=lambda call: True)
+        def callback_query(call):
+            msg_id = call.message.message_id
+            chat_id = call.from_user.id
+            answer, image_name = call.data.split()
+            date = call.message.date
+
+            self.bot.edit_message_reply_markup(chat_id=chat_id, message_id=msg_id, reply_markup=None)
+
+            if time.time() - date > ForestBot.out_date_time:
+                self.bot.answer_callback_query(call.id, 'Сообщение устарело')
+                self.bot.send_message(chat_id, 'Похоже, прошло слишком много времени...\n'
+                                               'Отправьте ваши координаты снова, а мы их обработаем')
+
+            elif answer == 'y':
+                self.bot.answer_callback_query(call.id, 'Принято')
+                self.bot.send_message(chat_id, 'Начинаем обработку..')
+                self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
+            else:
+                self.bot.answer_callback_query(call.id, 'Отмена')
+                self.bot.send_message(chat_id, 'Отмена..')
+
     def __handle_cords_input(self, chat_id, cords):
-        self.bot.send_message(chat_id, "Ваши координаты приняты. Начинаем обработку...")
+        self.bot.send_message(chat_id, "Ваши координаты приняты. Загружаем снимок...")
         image_name = f"input_image&id={chat_id}&time={round(time.time() * 1000)}.png"
         radius = ForestBot.default_radius if chat_id not in self.user_radiuses else \
             self.user_radiuses[chat_id]
 
         Thread(
-            target=self.__parallel_load_satellite_image,
+            target=self.__ask_for_analyse,
             kwargs={
                 'image_name': image_name,
                 'cords': cords,
@@ -143,15 +167,17 @@ class ForestBot:
             }
         ).start()
 
-    @staticmethod
-    def __test_document_message_is_image(message) -> bool:
-        return message.document.mime_type.split('/')[0] == 'image'
-
-    def __parallel_load_satellite_image(self, image_name, cords, radius, download_dir, chat_id):
+    def __ask_for_analyse(self, image_name, cords, radius, download_dir, chat_id):
         try:
             transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
                                            download_dir=download_dir)
-            self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
+            self.__send_image_with_retry(
+                result_path=download_dir / image_name,
+                chat_id=chat_id,
+                caption='Снимок местности по вашим координатам',
+                reply_markup=generate_buttons(image_name)
+            )
+            # self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
         except Exception as ex:
             print(f"Failed to load satellite images:\n{ex}")
             self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
@@ -190,19 +216,19 @@ class ForestBot:
         :param Path result_path: path to the result image
         :param int chat_id: chat id
         """
-        Thread(target=self.__send_result_with_retry, args=[result_path, chat_id]).start()
+        Thread(target=self.__send_image_with_retry, args=[result_path, chat_id]).start()
 
-    def __send_result_with_retry(self, result_path: Path, chat_id: int, attempt: int = 0) -> None:
+    def __send_image_with_retry(self, result_path: Path, chat_id: int, attempt: int = 0, **kwargs) -> None:
         """
         Method for sending the processed image. Applies multiple retries on failed submission.
-        :param Path result_path: path to the result image
+        :param Path result_path: path to the image
         :param int chat_id: chat id
         :param int attempt: attempt number (starts from 0)
         """
         try:
             # Try to read and send result
             result = open(result_path, 'rb')
-            self.bot.send_photo(chat_id=chat_id, photo=result)
+            self.bot.send_photo(chat_id=chat_id, photo=result, **kwargs)
         except Exception as exception:
             print(
                 f"Attempt {attempt}/{ForestBot.max_attempts} failed. Trying again...\n"
@@ -212,7 +238,7 @@ class ForestBot:
             if attempt < ForestBot.max_attempts:
                 # Do another attempt with delay
                 time.sleep(1)
-                self.__send_result_with_retry(result_path, chat_id, attempt + 1)
+                self.__send_image_with_retry(result_path, chat_id, attempt + 1, **kwargs)
             else:
                 # Maximum number of attempts made. Ask user to retry
                 print('=' * 10, f"\nFailed to send\nchat_id = {chat_id}\nimg = {result_path}\n", '=' * 10, sep='')
