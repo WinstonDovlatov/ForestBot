@@ -1,4 +1,6 @@
 from typing import Union, Tuple
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 wrong_msg = (False, None)
 
@@ -59,3 +61,27 @@ def get_cords_from_msg(message) -> Tuple[bool, Union[None, Tuple[float, float]]]
         return wrong_msg
 
     return True, (float(words[0]), float(words[1]))
+
+
+def convert_deg_to_km(deg: float) -> float:
+    return 111.1348 * deg
+
+
+def convert_km_to_deg(km: float) -> float:
+    return km / 111.1348
+
+
+def generate_buttons(image_name) -> InlineKeyboardMarkup:
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 1
+    markup.add(InlineKeyboardButton("🧭 Найти лесные дороги 🧭", callback_data=f"y {image_name}"),
+               InlineKeyboardButton("Отмена 🚫", callback_data=f"n {image_name}"))
+    return markup
+
+
+def test_document_message_is_image(message) -> bool:
+    return message.document.mime_type.split('/')[0] == 'image'
+
+
+def test_document_message_not_image(message) -> bool:
+    return not test_document_message_is_image(message)

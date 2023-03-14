@@ -1,10 +1,9 @@
 import telebot
-from forest_bot_front.bot_common import test_document_message_is_image, generate_buttons, \
-    test_document_message_not_image
 import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
-from forest_bot_front.utils import get_radius_from_msg, get_cords_from_msg, is_float
+from forest_bot_front.utils import get_radius_from_msg, get_cords_from_msg, is_float, convert_deg_to_km, \
+    convert_km_to_deg, test_document_message_is_image, generate_buttons, test_document_message_not_image
 from satelline.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
@@ -18,11 +17,13 @@ class ForestBot:
     model_input_size = 224
     use_crop = True
     crop_size = 224
-    default_radius = 0.02
-    max_radius = 0.05
-    min_radius = 0.01
+    default_radius_deg = 0.02
+    max_radius_km = 10.0
+    min_radius_km = 1.0
     default_threshold = 0.2
     out_date_time = 60 * 10  # in seconds
+    min_photo_size = 200
+    max_photo_size = 2000
 
     def __init__(self):
         # TODO: hide token to env
@@ -30,7 +31,7 @@ class ForestBot:
             token = token_file.readline()
 
         # TODO: save + load from save. make static?
-        self.user_radiuses = dict()
+        self.user_radiuses_deg = dict()
         self.user_thresholds = dict()
         self.bot = telebot.TeleBot(token)
         self.__init_messages()
@@ -51,20 +52,19 @@ class ForestBot:
     def __add_handlers(self) -> None:
         """Method for initialize message handlers from Telegram bot"""
 
-        @self.bot.message_handler(commands=['set_threshold'])
         @self.bot.message_handler(commands=['set_sensitivity'])
         def handle_threshold(message) -> None:
             msg_wrong = "Для установки чувствительности введите число" \
                         " в диапазоне от 0 до 1. Чем больше чувствительность, тем больше потенциальных дорог будет" \
-                        "обнаружено \n\nПример:\n/set_sensitivity 0.2"
+                        "обнаружено \n\nПример:\n/set_sensitivity 0.3"
             words = message.text.split(' ')
             if len(words) != 2 or not is_float(words[1]) or not 0 < float(words[1]) < 1:
                 self.bot.send_message(message.chat.id, msg_wrong)
             else:
-                # higher sensitivity => lower trashhold
+                # higher sensitivity => lower threshold
                 new_threshold = 1 - float(words[1])
                 self.user_thresholds[message.chat.id] = new_threshold
-                self.bot.send_message(message.chat.id, f"Установлена новая чувствительность: {new_threshold}")
+                self.bot.send_message(message.chat.id, f"Установлена новая чувствительность: {1 - new_threshold:.2f}")
 
         @self.bot.message_handler(commands=['start'])
         def handle_start_message(message) -> None:
@@ -73,43 +73,56 @@ class ForestBot:
         @self.bot.message_handler(commands=['help'])
         def handle_help_message(message) -> None:
             # TODO: Написать /help
-            self.bot.send_message(message.chat.id, "Нормально делай - нормально будет")
+            self.bot.send_message(message.chat.id, self.help_message)
 
         @self.bot.message_handler(commands=['set_radius'])
         def handle_change_radius_message(message) -> None:
-            # TODO: degree -> km. Text?
             wrong_command_message = "Для изменения радиуса снимка используйте команду таким образом:\n/set_radius " \
-                                    f"{{число в пределах [{ForestBot.min_radius}, {ForestBot.max_radius}]}}\n\n" \
-                                    "Пример:\n/set_radius 0.5"
+                                    f"{{число в пределах [{ForestBot.min_radius_km}, {ForestBot.max_radius_km}]}}\n\n" \
+                                    "Пример:\n/set_radius 2.5"
             success, custom_radius = get_radius_from_msg(
-                message=message, min_value=ForestBot.min_radius, max_value=ForestBot.max_radius)
+                message=message, min_value=ForestBot.min_radius_km, max_value=ForestBot.max_radius_km)
 
             if not success:
                 self.bot.send_message(message.chat.id, wrong_command_message)
             else:
-                self.user_radiuses[message.chat.id] = custom_radius
+                self.user_radiuses_deg[message.chat.id] = convert_km_to_deg(custom_radius)
                 self.bot.send_message(message.chat.id,
-                                      f"Радиус снимка успешно установлен: {round(custom_radius, 5)}°")
+                                      f"Радиус снимка успешно установлен: {round(custom_radius, 2)} км")
 
-        @self.bot.message_handler(func=test_document_message_not_image)
-        def handle_file(message) -> None:
-            self.bot.send_message(message.chat.id, )
+        @self.bot.message_handler(func=test_document_message_not_image, content_types=['document'])
+        def handle_wrong_file(message) -> None:
+            self.bot.send_message(message.chat.id, self.wrong_file_format_message)
 
+        @self.bot.message_handler(
+            content_types=['audio', 'sticker', 'video', 'video_note', 'voice', 'contact', 'web_app_data'])
+        def handle_other_types(message) -> None:
+            self.bot.send_message(message.chat.id, self.weird_message)
 
         @self.bot.message_handler(func=test_document_message_is_image, content_types=['document'])
         @self.bot.message_handler(content_types=['photo'])
         def handle_photo_message(message) -> None:
-            self.bot.send_message(message.chat.id, self.accept_photo_message)
-
             # Here we take only last image from the assumption that the user has sent only one picture
             # TODO: add processing of several photos in one message
             if message.content_type == 'photo':
+                if not ForestBot.min_photo_size <= message.photo[-1].width <= ForestBot.max_photo_size or \
+                        not ForestBot.min_photo_size <= message.photo[-1].height <= ForestBot.max_photo_size:
+                    self.bot.send_message(message.chat.id, self.wrong_size_message)
+                    return
+
                 file_id = message.photo[-1].file_id
                 file_format = "jpg"
+
             else:  # document
+                if not ForestBot.min_photo_size <= message.document.thumb.width <= ForestBot.max_photo_size or \
+                        not ForestBot.min_photo_size <= message.document.thumb.height <= ForestBot.max_photo_size:
+                    self.bot.send_message(message.chat.id, self.wrong_size_message)
+                    return
+
                 file_id = message.document.file_id
                 file_format = message.document.mime_type.split('/')[1]
 
+            self.bot.send_message(message.chat.id, self.accept_photo_message)
             # Generate unique name for image
             image_name = f"input_image&id={message.chat.id}&time={round(time.time() * 1000)}.{file_format}"
 
@@ -154,13 +167,14 @@ class ForestBot:
                     self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
             else:
                 self.bot.answer_callback_query(call.id, 'Отмена 🚫')
-                self.bot.send_message(chat_id, 'Поиск отменен. Хотите изучить другую местность ?🤗')
+                self.bot.send_message(chat_id, 'Поиск отменен. Хотите изучить другую местность ?🤗'
+                                               '\nПросто отправьте координаты или снимок!')
 
     def __handle_cords_input(self, chat_id, cords):
         Thread(target=self.__send_loading_animation_message, kwargs={'chat_id': chat_id}).start()
         image_name = f"input_image&id={chat_id}&time={round(time.time() * 1000)}.png"
-        radius = ForestBot.default_radius if chat_id not in self.user_radiuses else \
-            self.user_radiuses[chat_id]
+        radius = ForestBot.default_radius_deg if chat_id not in self.user_radiuses_deg else \
+            self.user_radiuses_deg[chat_id]
 
         Thread(
             target=self.__ask_for_analyse,
@@ -214,6 +228,18 @@ class ForestBot:
 
         with open("forest_bot_front/messages/wrong_cords_message.txt", encoding="UTF-8") as f:
             self.wrong_cords_message = f.read()
+
+        with open("forest_bot_front/messages/wrong_file_format_message.txt", encoding="UTF-8") as f:
+            self.wrong_file_format_message = f.read()
+
+        with open("forest_bot_front/messages/wrong_size_message.txt", encoding="UTF-8") as f:
+            self.wrong_size_message = f.read()
+
+        with open("forest_bot_front/messages/weird_message.txt", encoding="UTF-8") as f:
+            self.weird_message = f.read()
+
+        with open("forest_bot_front/messages/help_message.txt", encoding="UTF-8") as f:
+            self.help_message = f.read()
 
     def __get_threshold(self, chat_id: int) -> float:
         if chat_id in self.user_thresholds:

@@ -58,6 +58,7 @@ def postprocess(original_img: np.ndarray, prediction: np.ndarray, threshold: flo
     :return np.ndarray: combined prediction and image
     """
     cool_color_bgr = [235, 56, 226]
+    prediction = cv2.resize(prediction, original_img.shape[0:2][::-1], interpolation=cv2.INTER_NEAREST)
 
     prediction[prediction < threshold] = 0
     prediction[prediction >= threshold] = 1
@@ -65,7 +66,6 @@ def postprocess(original_img: np.ndarray, prediction: np.ndarray, threshold: flo
 
     roads = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGR)
     roads[np.where((roads == [255, 255, 255]).all(axis=2))] = cool_color_bgr
-    roads = cv2.resize(roads, original_img.shape[0:2][::-1], interpolation=cv2.INTER_NEAREST)
 
     result = cv2.add(roads, cv2.cvtColor(original_img, cv2.COLOR_RGB2BGR))
 
