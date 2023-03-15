@@ -59,7 +59,7 @@ class Controller:
 
         result = ml_backend.utils.postprocess(raw_input, prediction, current.threshold)
 
-        result_path = Path(f"result_photos/{current.img_name}").with_suffix(".jpg")
+        result_path = Path(f"result_photos/{current.img_name}").with_suffix(".png")
         cv2.imwrite(str(result_path), result)
 
         self.callback(result_path, current.chat_id)

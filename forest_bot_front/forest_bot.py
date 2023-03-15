@@ -17,7 +17,7 @@ class ForestBot:
     model_input_size = 224
     use_crop = True
     crop_size = 224
-    default_radius_deg = 0.02
+    default_radius_deg = convert_km_to_deg(2.0)
     max_radius_km = 10.0
     min_radius_km = 1.0
     default_threshold = 0.2
@@ -105,17 +105,21 @@ class ForestBot:
             # Here we take only last image from the assumption that the user has sent only one picture
             # TODO: add processing of several photos in one message
             if message.content_type == 'photo':
-                if not ForestBot.min_photo_size <= message.photo[-1].width <= ForestBot.max_photo_size or \
-                        not ForestBot.min_photo_size <= message.photo[-1].height <= ForestBot.max_photo_size:
+                print(message.photo[-1].width)
+                print(message.photo[-1].height)
+                if not (ForestBot.min_photo_size <= message.photo[-1].width <= ForestBot.max_photo_size) or \
+                        not (ForestBot.min_photo_size <= message.photo[-1].height <= ForestBot.max_photo_size):
                     self.bot.send_message(message.chat.id, self.wrong_size_message)
                     return
 
                 file_id = message.photo[-1].file_id
-                file_format = "jpg"
+                file_format = "png"
 
             else:  # document
-                if not ForestBot.min_photo_size <= message.document.thumb.width <= ForestBot.max_photo_size or \
-                        not ForestBot.min_photo_size <= message.document.thumb.height <= ForestBot.max_photo_size:
+                file_info = self.bot.get_file(message.document.file_id)
+                print(file_info)
+                if not (ForestBot.min_photo_size <= message.document.thumb.width <= ForestBot.max_photo_size) or \
+                        not (ForestBot.min_photo_size <= message.document.thumb.height <= ForestBot.max_photo_size):
                     self.bot.send_message(message.chat.id, self.wrong_size_message)
                     return
 
