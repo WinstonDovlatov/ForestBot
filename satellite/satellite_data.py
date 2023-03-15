@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 import math
 
-from satelline.firehr_data import RegionST, download_data
+from satellite.firehr_data import RegionST, download_data
 from PIL import Image
 import rasterio
 import numpy as np

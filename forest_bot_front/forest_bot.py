@@ -1,12 +1,11 @@
-import telebot
-import time
 import urllib.request
 from ml_backend.controller import Controller, Artifact
-from forest_bot_front.utils import get_radius_from_msg, get_cords_from_msg, is_float, convert_deg_to_km, \
-    convert_km_to_deg, test_document_message_is_image, generate_buttons, test_document_message_not_image
-from satelline.satellite_data import download_rect
+from forest_bot_front.image_analyzer.size_analyzer import is_correct_size
+from forest_bot_front.utils import *
+from satellite.satellite_data import download_rect
 from threading import Thread
 from pathlib import Path
+import telebot
 
 
 class ForestBot:
@@ -24,6 +23,7 @@ class ForestBot:
     out_date_time = 60 * 10  # in seconds
     min_photo_size = 200
     max_photo_size = 2000
+    valid_formats = ['png', 'jpeg', 'jpg', 'bmp']
 
     def __init__(self):
         # TODO: hide token to env
@@ -90,52 +90,46 @@ class ForestBot:
                 self.bot.send_message(message.chat.id,
                                       f"Радиус снимка успешно установлен: {round(custom_radius, 2)} км")
 
-        @self.bot.message_handler(func=test_document_message_not_image, content_types=['document'])
-        def handle_wrong_file(message) -> None:
-            self.bot.send_message(message.chat.id, self.wrong_file_format_message)
+        # @self.bot.message_handler(func=test_document_message_not_image, content_types=['document'])
+        # def handle_not_image_file(message) -> None:
+        #     self.bot.send_message(message.chat.id, self.wrong_file_format_message)
 
         @self.bot.message_handler(
             content_types=['audio', 'sticker', 'video', 'video_note', 'voice', 'contact', 'web_app_data'])
         def handle_other_types(message) -> None:
-            self.bot.send_message(message.chat.id, self.weird_message)
+            self.bot.send_message(message.chat.id, self.wrong_file_format_message)
 
-        @self.bot.message_handler(func=test_document_message_is_image, content_types=['document'])
+        @self.bot.message_handler(content_types=['document'])
         @self.bot.message_handler(content_types=['photo'])
         def handle_photo_message(message) -> None:
             # Here we take only last image from the assumption that the user has sent only one picture
             # TODO: add processing of several photos in one message
+            # TODO: move validation to another method
             if message.content_type == 'photo':
-                print(message.photo[-1].width)
-                print(message.photo[-1].height)
-                if not (ForestBot.min_photo_size <= message.photo[-1].width <= ForestBot.max_photo_size) or \
-                        not (ForestBot.min_photo_size <= message.photo[-1].height <= ForestBot.max_photo_size):
-                    self.bot.send_message(message.chat.id, self.wrong_size_message)
-                    return
-
                 file_id = message.photo[-1].file_id
                 file_format = "png"
 
             else:  # document
-                file_info = self.bot.get_file(message.document.file_id)
-                print(file_info)
-                if not (ForestBot.min_photo_size <= message.document.thumb.width <= ForestBot.max_photo_size) or \
-                        not (ForestBot.min_photo_size <= message.document.thumb.height <= ForestBot.max_photo_size):
-                    self.bot.send_message(message.chat.id, self.wrong_size_message)
-                    return
-
                 file_id = message.document.file_id
                 file_format = message.document.mime_type.split('/')[1]
-
-            self.bot.send_message(message.chat.id, self.accept_photo_message)
-            # Generate unique name for image
-            image_name = f"input_image&id={message.chat.id}&time={round(time.time() * 100000)}.{file_format}"
+                if not ForestBot.__is_correct_format(file_format):
+                    self.bot.send_message(message.chat.id, self.wrong_file_format_message)
+                    return
 
             file_info = self.bot.get_file(file_id)
             file_url = f'https://api.telegram.org/file/bot{self.bot.token}/{file_info.file_path}'
+
+            if not is_correct_size(url=file_url, max_size=ForestBot.max_photo_size, min_size=ForestBot.min_photo_size):
+                self.bot.send_message(message.chat.id, self.wrong_size_message)
+                return
+
+            self.bot.send_message(message.chat.id, self.accept_photo_message)
+            image_name = generate_image_name(chat_id=message.chat.id, file_format=file_format)
             urllib.request.urlretrieve(file_url, f"input_photos/{image_name}")
             chat_id = message.chat.id
             # A pair of image and id is added to the processing queue
-            self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
+            self.controller.request_queue.put(
+                Artifact(chat_id, image_name, self.user_thresholds.get(chat_id, self.default_threshold)))
 
         @self.bot.message_handler(content_types=['text'])
         def handle_text_cords_message(message) -> None:
@@ -152,7 +146,7 @@ class ForestBot:
                                       cords=(message.location.latitude, message.location.longitude))
 
         @self.bot.callback_query_handler(func=lambda call: True)
-        def callback_query(call):
+        def callback_for_processing_choice(call):
             msg_id = call.message.message_id
             chat_id = call.from_user.id
             answer, image_name = call.data.split()
@@ -168,7 +162,8 @@ class ForestBot:
                 else:
                     self.bot.answer_callback_query(call.id, 'Принято 👍')
                     self.bot.send_message(chat_id, 'Начинаем поиск 🔍')
-                    self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
+                    self.controller.request_queue.put(
+                        Artifact(chat_id, image_name, self.user_thresholds.get(chat_id, self.default_threshold)))
             else:
                 self.bot.answer_callback_query(call.id, 'Отмена 🚫')
                 self.bot.send_message(chat_id, 'Поиск отменен. Хотите изучить другую местность ?🤗'
@@ -176,12 +171,11 @@ class ForestBot:
 
     def __handle_cords_input(self, chat_id, cords):
         Thread(target=self.__send_loading_animation_message, kwargs={'chat_id': chat_id}).start()
-        image_name = f"input_image&id={chat_id}&time={round(time.time() * 100000)}.png"
-        radius = ForestBot.default_radius_deg if chat_id not in self.user_radiuses_deg else \
-            self.user_radiuses_deg[chat_id]
+        image_name = generate_image_name(chat_id)
+        radius = self.user_radiuses_deg.get(chat_id, ForestBot.default_radius_deg)
 
         Thread(
-            target=self.__ask_for_analyse,
+            target=self.__download_satellite,
             kwargs={
                 'image_name': image_name,
                 'cords': cords,
@@ -199,7 +193,7 @@ class ForestBot:
             self.bot.edit_message_text(message_text + states[i % 3], chat_id, msg.id)
             time.sleep(0.5)
 
-    def __ask_for_analyse(self, image_name, cords, radius, download_dir, chat_id):
+    def __download_satellite(self, image_name, cords, radius, download_dir, chat_id):
         try:
             transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
                                            download_dir=download_dir)
@@ -209,7 +203,6 @@ class ForestBot:
                 caption=f'Снимок местности по вашим координатам:\n{cords[0]}, {cords[1]}\n',
                 reply_markup=generate_buttons(image_name)
             )
-            # self.controller.request_queue.put(Artifact(chat_id, image_name, self.__get_threshold(chat_id)))
         except Exception as ex:
             print(f"Failed to load satellite images:\n{ex}")
             self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
@@ -239,17 +232,8 @@ class ForestBot:
         with open("forest_bot_front/messages/wrong_size_message.txt", encoding="UTF-8") as f:
             self.wrong_size_message = f.read()
 
-        with open("forest_bot_front/messages/weird_message.txt", encoding="UTF-8") as f:
-            self.weird_message = f.read()
-
         with open("forest_bot_front/messages/help_message.txt", encoding="UTF-8") as f:
             self.help_message = f.read()
-
-    def __get_threshold(self, chat_id: int) -> float:
-        if chat_id in self.user_thresholds:
-            return self.user_thresholds[chat_id]
-        else:
-            return self.default_threshold
 
     def __send_prediction_callback(self, result_path: Path, chat_id: int) -> None:
         """
@@ -296,3 +280,12 @@ class ForestBot:
             if attempt:
                 print(
                     f"!!!\nSuccessfully send by {attempt}th attempt.\nChat id = {chat_id}, img = {result_path}\n!!!\n")
+
+    @staticmethod
+    def __is_image_size_correct(photo) -> bool:
+        return (ForestBot.min_photo_size <= photo[-1].width <= ForestBot.max_photo_size) and (
+                ForestBot.min_photo_size <= photo[-1].height <= ForestBot.max_photo_size)
+
+    @staticmethod
+    def __is_correct_format(file_format: str):
+        return file_format in ForestBot.valid_formats
