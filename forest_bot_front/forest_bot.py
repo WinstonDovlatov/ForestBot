@@ -3,7 +3,7 @@ from ml_backend.controller import Controller, Artifact
 from forest_bot_front.image_analyzer.size_analyzer import is_correct_size
 from forest_bot_front.utils import *
 from satellite.satellite_data import download_rect
-from threading import Thread
+from threading import Thread, Lock
 from pathlib import Path
 import telebot
 
@@ -24,6 +24,7 @@ class ForestBot:
     min_photo_size = 200
     max_photo_size = 2000
     valid_formats = ['png', 'jpeg', 'jpg', 'bmp']
+    min_download_size_to_notify = 5
 
     def __init__(self):
         # TODO: hide token to env
@@ -42,6 +43,8 @@ class ForestBot:
             use_crop=ForestBot.use_crop,
             crop_size=ForestBot.crop_size if ForestBot.use_crop else None
         )
+        self.download_satellite_lock = Lock()
+        self.download_satellite_queue_size = 0
 
         Thread(target=self.controller.observe_updates).start()
 
@@ -173,7 +176,7 @@ class ForestBot:
         Thread(target=self.__send_loading_animation_message, kwargs={'chat_id': chat_id}).start()
         image_name = generate_image_name(chat_id)
         radius = self.user_radiuses_deg.get(chat_id, ForestBot.default_radius_deg)
-
+        self.download_satellite_queue_size += 1
         Thread(
             target=self.__download_satellite,
             kwargs={
@@ -189,24 +192,31 @@ class ForestBot:
         states = ['🌍', '🌎', '🌏']
         message_text = "Ваши координаты приняты. Загружаем снимок "
         msg = self.bot.send_message(chat_id, message_text + states[0])
+        if self.download_satellite_queue_size > ForestBot.min_download_size_to_notify:
+            self.bot.send_message(chat_id,
+                                  f"В данный момент нам поступило достаточно много запросов на загрузку снимков.\n"
+                                  f"Номер вашего запроса в очереди: {self.download_satellite_queue_size}")
         for i in range(1, 64):
             self.bot.edit_message_text(message_text + states[i % 3], chat_id, msg.id)
             time.sleep(0.5)
 
     def __download_satellite(self, image_name, cords, radius, download_dir, chat_id):
-        try:
-            transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
-                                           download_dir=download_dir)
-            self.__send_image_with_retry(
-                result_path=download_dir / image_name,
-                chat_id=chat_id,
-                caption=f'Снимок местности по вашим координатам:\n{cords[0]}, {cords[1]}\n',
-                reply_markup=generate_buttons(image_name)
-            )
-        except Exception as ex:
-            print(f"Failed to load satellite images:\n{ex}")
-            self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
-                                           "Вы - отважный путешественник, раз решили отправиться туда!")
+        with self.download_satellite_lock:
+            try:
+                transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
+                                               download_dir=download_dir)
+                self.__send_image_with_retry(
+                    result_path=download_dir / image_name,
+                    chat_id=chat_id,
+                    caption=f'Снимок местности по вашим координатам:\n{cords[0]}, {cords[1]}\n',
+                    reply_markup=generate_buttons(image_name)
+                )
+            except Exception as ex:
+                print(f"Failed to load satellite images:\n{ex}")
+                self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
+                                               "Вы - отважный путешественник, раз решили отправиться туда!")
+            finally:
+                self.download_satellite_queue_size -= 1
 
     def __init_messages(self) -> None:
         """Loads basic messages from files."""

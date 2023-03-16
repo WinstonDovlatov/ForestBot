@@ -44,7 +44,7 @@ class RegionST(Region):
     def shape(self):
         "Shape of the region (height, width)"
         if self._shape is None:
-            return (self.height, self.width)
+            return self.height, self.width
         else:
             return self._shape
 
@@ -92,8 +92,6 @@ def split_region(region: RegionST, size: int, cls=Region):
     if len(lats[-1].reshape(-1)) == 0 and len(lons[-1].reshape(-1)) == 0:
         lons = lons[:-1]
         lats = lats[:-1]
-    # lons = lon.reshape(-1, size)
-    # lats = lat.reshape(-1, size)
     if issubclass(cls, RegionST):
         return [cls(f'{region.name}.{i}.{j}', coords2bbox(ilon, ilat, region.pixel_size),
                     pixel_size=region.pixel_size, time_start=region.time_start,

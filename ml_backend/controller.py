@@ -37,7 +37,7 @@ class Controller:
         self.model = Model(input_size=self.model_input_size)
 
     def observe_updates(self) -> None:
-        """Check if there are new images for prediction"""
+        """Checks if there are new images for prediction"""
         while True:
             if not Controller.request_queue.empty():
                 self.__analyse_image()

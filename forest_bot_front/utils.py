@@ -93,24 +93,3 @@ def generate_image_name(chat_id: int, file_format: str = 'png') -> str:
 
 def is_image_size_correct(photo, min_size, max_size) -> bool:
     return (min_size <= photo[-1].width <= max_size) and (min_size <= photo[-1].height <= max_size)
-
-
-# def get_image_info(message) -> Tuple[bool, str, str]:
-#     if message.content_type == 'photo':
-#         print(message.photo[-1].width)
-#         print(message.photo[-1].height)
-#         if not is_image_size_correct(message.photo):
-#             self.bot.send_message(message.chat.id, self.wrong_size_message)
-#             return
-#
-#         file_id = message.photo[-1].file_id
-#         file_format = "png"
-#
-#     elif message.content_type == 'document':
-#         file_info = self.bot.get_file(message.document.file_id)
-#         print(file_info)
-#         if not (ForestBot.min_photo_size <= message.document.thumb.width <= ForestBot.max_photo_size) or \
-#                 not (ForestBot.min_photo_size <= message.document.thumb.height <= ForestBot.max_photo_size):
-#             self.bot.send_message(message.chat.id, self.wrong_size_message)
-#             return
-
