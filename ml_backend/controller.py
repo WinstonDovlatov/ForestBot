@@ -57,9 +57,9 @@ class Controller:
             model_input = ml_backend.utils.resize_to_model_input(model_input, self.crop_size)
             prediction = self.model.predict_proba(model_input)
 
-        result = ml_backend.utils.postprocess(raw_input, prediction, current.threshold)
+        result, mask = ml_backend.utils.postprocess(raw_input, prediction, current.threshold)
 
         result_path = Path(f"result_photos/{current.img_name}").with_suffix(".png")
         cv2.imwrite(str(result_path), result)
 
-        self.callback(result_path, current.chat_id)
+        self.callback(result_path, current.chat_id, mask, image_name=current.img_name)

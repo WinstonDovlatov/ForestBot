@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from typing import Tuple
 
 
 def align(size: int, target_size: int) -> int:
@@ -49,13 +50,13 @@ def resize_to_model_input(image: np.ndarray, model_input_size: int) -> np.ndarra
     return image
 
 
-def postprocess(original_img: np.ndarray, prediction: np.ndarray, threshold: float) -> np.ndarray:
+def postprocess(original_img: np.ndarray, prediction: np.ndarray, threshold: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Postprocess prediction. Apply threshold, bring to original shape and combine with original image
     :param np.ndarray original_img: original image
     :param np.ndarray prediction: model prediction
     :param float threshold: threshold for prediction
-    :return np.ndarray: combined prediction and image
+    :return: (combined prediction and image, mask for convert to osm)
     """
     cool_color_bgr = [235, 56, 226]
     prediction = cv2.resize(prediction, original_img.shape[0:2][::-1], interpolation=cv2.INTER_NEAREST)
@@ -69,4 +70,4 @@ def postprocess(original_img: np.ndarray, prediction: np.ndarray, threshold: flo
 
     result = cv2.add(roads, cv2.cvtColor(original_img, cv2.COLOR_RGB2BGR))
 
-    return result
+    return result, prediction

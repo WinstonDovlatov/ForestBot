@@ -1,5 +1,6 @@
 input_photos
 result_photos
+osm
 forest_bot_front/token.txt
 processes/model_epoch059_loss0.pt
 processes/model.onnx

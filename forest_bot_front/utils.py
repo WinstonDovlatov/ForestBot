@@ -71,13 +71,18 @@ def convert_km_to_deg(km: float) -> float:
     return km / 111.1348
 
 
-def generate_buttons(image_name) -> InlineKeyboardMarkup:
+def generate_buttons_continue(image_name) -> InlineKeyboardMarkup:
     markup = InlineKeyboardMarkup()
     markup.row_width = 1
     markup.add(InlineKeyboardButton("🧭 Найти лесные дороги 🧭", callback_data=f"y {image_name}"),
                InlineKeyboardButton("Отмена 🚫", callback_data=f"n {image_name}"))
     return markup
 
+
+def generate_buttons_osm(image_name) -> InlineKeyboardMarkup:
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🌎 Экспортировать в OSM 🌎", callback_data=f"osm {image_name}"))
+    return markup
 
 def test_document_message_is_image(message) -> bool:
     return message.document.mime_type.split('/')[0] == 'image'
@@ -93,3 +98,13 @@ def generate_image_name(chat_id: int, file_format: str = 'png') -> str:
 
 def is_image_size_correct(photo, min_size, max_size) -> bool:
     return (min_size <= photo[-1].width <= max_size) and (min_size <= photo[-1].height <= max_size)
+
+
+def is_processing_call(call) -> bool:
+    # TODO: оч плохо, надо переписать
+    return (call.data[0] == 'y') or (call.data[0] == 'n')
+
+
+def is_osm_call(call) -> bool:
+    # TODO: оч плохо, надо переписать
+    return call.data.split()[0] == 'osm'

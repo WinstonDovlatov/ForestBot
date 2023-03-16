@@ -3,9 +3,12 @@ from ml_backend.controller import Controller, Artifact
 from forest_bot_front.image_analyzer.size_analyzer import is_correct_size
 from forest_bot_front.utils import *
 from satellite.satellite_data import download_rect
+from satellite.osm_convert import get_lines
 from threading import Thread, Lock
 from pathlib import Path
 import telebot
+import numpy as np
+import xml.etree.ElementTree as ET
 
 
 class ForestBot:
@@ -45,6 +48,9 @@ class ForestBot:
         )
         self.download_satellite_lock = Lock()
         self.download_satellite_queue_size = 0
+
+        self.img_to_mask = dict()
+        self.img_to_func = dict()
 
         Thread(target=self.controller.observe_updates).start()
 
@@ -148,7 +154,31 @@ class ForestBot:
             self.__handle_cords_input(chat_id=message.chat.id,
                                       cords=(message.location.latitude, message.location.longitude))
 
-        @self.bot.callback_query_handler(func=lambda call: True)
+        @self.bot.callback_query_handler(func=is_osm_call)
+        def callback_for_osm(call):
+            # TODO: добавить устаревание
+            chat_id = call.from_user.id
+            msg_id = call.message.message_id
+            img_name = call.data.split()[1]
+            mask = self.img_to_mask[img_name]
+            func = self.img_to_func[img_name]
+            self.bot.answer_callback_query(call.id, 'Принято 👍')
+            self.bot.edit_message_reply_markup(chat_id=chat_id, message_id=msg_id, reply_markup=None)
+            self.bot.send_message(chat_id, "Экспортируем результат в формат OSM...")
+            Thread(target=__send_osm, args=[chat_id, mask, func]).start()
+
+        def __send_osm(chat_id, mask, func):
+            file_name = f"{round(time.time() * 100000)}.osm"
+            file_path = Path(f'osm/{file_name}')
+            result = get_lines(mask, func)
+
+            with open(file_path, 'w') as f:
+                ET.ElementTree(result).write(f, encoding='unicode')
+
+            with open(file_path, 'rb') as f:
+                self.bot.send_document(chat_id=chat_id, document=f, caption="Готово!")
+
+        @self.bot.callback_query_handler(func=is_processing_call)
         def callback_for_processing_choice(call):
             msg_id = call.message.message_id
             chat_id = call.from_user.id
@@ -205,11 +235,12 @@ class ForestBot:
             try:
                 transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
                                                download_dir=download_dir)
+                self.img_to_func[image_name] = transform_func
                 self.__send_image_with_retry(
                     result_path=download_dir / image_name,
                     chat_id=chat_id,
                     caption=f'Снимок местности по вашим координатам:\n{cords[0]}, {cords[1]}\n',
-                    reply_markup=generate_buttons(image_name)
+                    reply_markup=generate_buttons_continue(image_name)
                 )
             except Exception as ex:
                 print(f"Failed to load satellite images:\n{ex}")
@@ -245,13 +276,22 @@ class ForestBot:
         with open("forest_bot_front/messages/help_message.txt", encoding="UTF-8") as f:
             self.help_message = f.read()
 
-    def __send_prediction_callback(self, result_path: Path, chat_id: int) -> None:
+    def __send_prediction_callback(self, result_path: Path, chat_id: int, mask: np.ndarray, image_name=None) -> None:
+        # TODO: ужас, передача маски куда не шла, но вот маппинг по имени изображения.......
         """
         Callback for completed prediction.
         :param Path result_path: path to the result image
         :param int chat_id: chat id
         """
-        Thread(target=self.__send_image_with_retry, args=[result_path, chat_id]).start()
+        self.img_to_mask[image_name] = mask
+        Thread(
+            target=self.__send_image_with_retry,
+            kwargs={
+                'result_path': result_path,
+                'chat_id': chat_id,
+                'reply_markup': generate_buttons_osm(image_name) if image_name in self.img_to_func else None
+            }
+        ).start()
 
     def __send_image_with_retry(self, result_path: Path, chat_id: int, attempt: int = 0, caption: str = "Готово!🥳",
                                 **kwargs) -> None:
