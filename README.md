@@ -27,7 +27,8 @@
 Отправьте координаты, а бот пришлет космический снимок, 
 а затем и найдет на нем дороги!
 
-![](readme_images/example_cords_lq.gif)
+
+<img src="readme_images/example_cords_lq.gif" width="414" height="896">
 
 ## Реализация 
 
