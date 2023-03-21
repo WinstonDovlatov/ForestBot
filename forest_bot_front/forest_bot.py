@@ -81,7 +81,6 @@ class ForestBot:
 
         @self.bot.message_handler(commands=['help'])
         def handle_help_message(message) -> None:
-            # TODO: Написать /help
             self.bot.send_message(message.chat.id, self.help_message)
 
         @self.bot.message_handler(commands=['set_radius'])
@@ -98,10 +97,6 @@ class ForestBot:
                 self.user_radiuses_deg[message.chat.id] = convert_km_to_deg(custom_radius)
                 self.bot.send_message(message.chat.id,
                                       f"Радиус снимка успешно установлен: {round(custom_radius, 2)} км")
-
-        # @self.bot.message_handler(func=test_document_message_not_image, content_types=['document'])
-        # def handle_not_image_file(message) -> None:
-        #     self.bot.send_message(message.chat.id, self.wrong_file_format_message)
 
         @self.bot.message_handler(
             content_types=['audio', 'sticker', 'video', 'video_note', 'voice', 'contact', 'web_app_data'])
@@ -136,13 +131,13 @@ class ForestBot:
             image_name = generate_image_name(chat_id=message.chat.id, file_format=file_format)
             urllib.request.urlretrieve(file_url, f"input_photos/{image_name}")
             chat_id = message.chat.id
+
             # A pair of image and id is added to the processing queue
             self.controller.request_queue.put(
                 Artifact(chat_id, image_name, self.user_thresholds.get(chat_id, self.default_threshold)))
 
         @self.bot.message_handler(content_types=['text'])
         def handle_text_cords_message(message) -> None:
-            # TODO: make queue for anti-DDOS
             success, cords = get_cords_from_msg(message.text)
             if not success:
                 self.bot.send_message(message.chat.id, self.wrong_cords_message)
@@ -162,12 +157,20 @@ class ForestBot:
             img_name = call.data.split()[1]
             mask = self.img_to_mask[img_name]
             func = self.img_to_func[img_name]
+
             self.bot.answer_callback_query(call.id, 'Принято 👍')
             self.bot.edit_message_reply_markup(chat_id=chat_id, message_id=msg_id, reply_markup=None)
             self.bot.send_message(chat_id, "Экспортируем результат в формат OSM...")
+
             Thread(target=__send_osm, args=[chat_id, mask, func]).start()
 
-        def __send_osm(chat_id, mask, func):
+        def __send_osm(chat_id, mask, func) -> None:
+            """
+            Method to generate and send .osm file to user.
+            :param chat_id: user id
+            :param mask: predicted mask
+            :param func: function for converting coordinates
+            """
             file_name = f"{round(time.time() * 100000)}.osm"
             file_path = Path(f'osm/{file_name}')
             result = get_lines(mask, func)
@@ -202,7 +205,12 @@ class ForestBot:
                 self.bot.send_message(chat_id, 'Поиск отменен. Хотите изучить другую местность ?🤗'
                                                '\nПросто отправьте координаты или снимок!')
 
-    def __handle_cords_input(self, chat_id, cords):
+    def __handle_cords_input(self, chat_id, cords) -> None:
+        """
+        Method to process coordinates
+        :param chat_id: user id
+        :param cords: extracted coordinates from geoteg or text message
+        """
         Thread(target=self.__send_loading_animation_message, kwargs={'chat_id': chat_id}).start()
         image_name = generate_image_name(chat_id)
         radius = self.user_radiuses_deg.get(chat_id, ForestBot.default_radius_deg)
@@ -218,7 +226,11 @@ class ForestBot:
             }
         ).start()
 
-    def __send_loading_animation_message(self, chat_id: int):
+    def __send_loading_animation_message(self, chat_id: int) -> None:
+        """
+        Method to show cool rotating globe in message
+        :param chat_id: user id
+        """
         states = ['🌍', '🌎', '🌏']
         message_text = "Ваши координаты приняты. Загружаем снимок "
         msg = self.bot.send_message(chat_id, message_text + states[0])
@@ -226,11 +238,14 @@ class ForestBot:
             self.bot.send_message(chat_id,
                                   f"В данный момент нам поступило достаточно много запросов на загрузку снимков.\n"
                                   f"Номер вашего запроса в очереди: {self.download_satellite_queue_size}")
-        for i in range(1, 64):
+        for i in range(1, 124):
             self.bot.edit_message_text(message_text + states[i % 3], chat_id, msg.id)
             time.sleep(0.5)
 
-    def __download_satellite(self, image_name, cords, radius, download_dir, chat_id):
+    def __download_satellite(self, image_name, cords, radius, download_dir, chat_id) -> None:
+        """
+        Method to download satellite image on disk.
+        """
         with self.download_satellite_lock:
             try:
                 transform_func = download_rect(image_name=image_name, center=cords, radius=radius,
@@ -277,7 +292,7 @@ class ForestBot:
             self.help_message = f.read()
 
     def __send_prediction_callback(self, result_path: Path, chat_id: int, mask: np.ndarray, image_name=None) -> None:
-        # TODO: ужас, передача маски куда не шла, но вот маппинг по имени изображения.......
+        # TODO: refactor
         """
         Callback for completed prediction.
         :param Path result_path: path to the result image
@@ -337,5 +352,5 @@ class ForestBot:
                 ForestBot.min_photo_size <= photo[-1].height <= ForestBot.max_photo_size)
 
     @staticmethod
-    def __is_correct_format(file_format: str):
+    def __is_correct_format(file_format: str) -> bool:
         return file_format in ForestBot.valid_formats

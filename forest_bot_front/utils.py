@@ -84,6 +84,7 @@ def generate_buttons_osm(image_name) -> InlineKeyboardMarkup:
     markup.add(InlineKeyboardButton("🌎 Экспортировать в OSM 🌎", callback_data=f"osm {image_name}"))
     return markup
 
+
 def test_document_message_is_image(message) -> bool:
     return message.document.mime_type.split('/')[0] == 'image'
 
@@ -101,10 +102,10 @@ def is_image_size_correct(photo, min_size, max_size) -> bool:
 
 
 def is_processing_call(call) -> bool:
-    # TODO: оч плохо, надо переписать
+    # TODO: make another classification
     return (call.data[0] == 'y') or (call.data[0] == 'n')
 
 
 def is_osm_call(call) -> bool:
-    # TODO: оч плохо, надо переписать
+    # TODO: make another classification
     return call.data.split()[0] == 'osm'

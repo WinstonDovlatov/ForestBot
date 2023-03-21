@@ -10,6 +10,10 @@ import warnings
 
 
 class Artifact:
+    """
+    Entity received from ForestBot
+    """
+
     def __init__(self, chat_id, img_name, threshold):
         self.chat_id = chat_id
         self.img_name = img_name
@@ -17,6 +21,9 @@ class Artifact:
 
 
 class Controller:
+    """
+    Class for manage all back-end work.
+    """
     default_crop_size = 400
     request_queue = queue.Queue()
 

@@ -3,7 +3,7 @@ import os
 import time
 
 
-def start_bot():
+def start_bot() -> None:
     try:
         forest_bot = ForestBot()
         forest_bot.start()
@@ -12,14 +12,13 @@ def start_bot():
         time.sleep(3)
         start_bot()
     else:
-        print("!!!Bot is working!!!")
+        print("!!!Bot is working again!!!")
 
 
 if __name__ == "__main__":
-    if not os.path.exists("input_photos"):
-        os.makedirs("input_photos")
-
-    if not os.path.exists("result_photos"):
-        os.makedirs("result_photos")
+    required_folders = ['input_photos', 'result_photos', 'osm']
+    for folder in required_folders:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
     start_bot()

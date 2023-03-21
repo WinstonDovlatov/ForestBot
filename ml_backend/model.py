@@ -7,6 +7,10 @@ import onnxruntime
 
 
 class Model:
+    """
+    Entity for ML model
+    """
+
     def __init__(self, input_size):
         self.model = smp.Unet(classes=1, decoder_attention_type="scse")
         model_path = Path('processes/model.onnx')
@@ -19,6 +23,9 @@ class Model:
         return 1 / (1 + np.exp(-x))
 
     def predict_proba_crop(self, input: np.ndarray, crop_size: int) -> np.ndarray:
+        """
+        Make prediction
+        """
         lines = []
         for i in tqdm(np.arange(input.shape[0] // crop_size)):
             line = []
@@ -37,7 +44,7 @@ class Model:
         return result
 
     def predict_proba(self, input: np.ndarray) -> np.ndarray:
-        # TODO: я это не тестил
+        # TODO: test it
         """
         Predict with resized image to model input size
         :param np.ndarray input: preprocessed image

@@ -17,6 +17,8 @@ from multiprocessing import Process
 from tqdm.auto import tqdm
 
 
+proj_name = "forest-bot-browser-proj"
+
 class RegionST(Region):
     "Defines a region in space and time with a name, a bounding box and the pixel size."
 
@@ -174,7 +176,7 @@ def download_data(R: RegionST, times, products, bands, path_save, scale=None, ma
 
 
 def download_image(R, bands, fsaves, j, max_cloud_fraction, path_save, products, scale, times, use_least_cloudy):
-    ee.Initialize(project="forest-bot-browser-proj")
+    ee.Initialize(project=proj_name)
     region = (f"[[{R.bbox.left}, {R.bbox.bottom}], [{R.bbox.right}, {R.bbox.bottom}], " +
               f"[{R.bbox.right}, {R.bbox.top}], [{R.bbox.left}, {R.bbox.top}]]")
     if not ((path_save / f'download.{R.name}.{bands[0]}_{j}.tif').is_file() and
