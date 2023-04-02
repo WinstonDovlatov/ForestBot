@@ -40,8 +40,8 @@ application.py
 1. [Создайте проект Google Cloud](https://console.cloud.google.com/projectcreate)
 2. Подключите к нему Google Earth Engine API через API Library
 3. Склонируйте репозиторий
-4. Скачайте файл model.onnx и поместите его в папку "processes"
-5. Создайте и заполните файл settings.ini в корневой папке по шаблону settings_example.ini
+4. Скачайте файл [model.onnx](https://drive.google.com/file/d/1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk/view?usp=sharing) и поместите его в папку "processes"
+5. Создайте и заполните файл settings.ini в корневой папке по шаблону [settings_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/settings_example.ini)
 5. Собирите образ 
 
     ```docker build -t bot_image ```
