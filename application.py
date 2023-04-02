@@ -16,6 +16,11 @@ def start_bot() -> None:
 
 
 if __name__ == "__main__":
+
+    # import ee
+    #
+    # ee.Authenticate()
+
     required_folders = ['input_photos', 'result_photos', 'osm']
     for folder in required_folders:
         if not os.path.exists(folder):

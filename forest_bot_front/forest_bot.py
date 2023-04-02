@@ -8,6 +8,7 @@ from threading import Thread, Lock
 from pathlib import Path
 import telebot
 import numpy as np
+import configparser
 import xml.etree.ElementTree as ET
 
 
@@ -20,7 +21,7 @@ class ForestBot:
     use_crop = True
     crop_size = 224
     default_radius_deg = convert_km_to_deg(2.0)
-    max_radius_km = 10.0
+    max_radius_km = 7.0
     min_radius_km = 1.0
     default_threshold = 0.2
     out_date_time = 60 * 10  # in seconds
@@ -30,9 +31,9 @@ class ForestBot:
     min_download_size_to_notify = 5
 
     def __init__(self):
-        # TODO: hide token to env
-        with open(Path("forest_bot_front/token.txt"), 'r') as token_file:
-            token = token_file.readline()
+        config = configparser.ConfigParser()
+        config.read("settings.ini")
+        token = config['BOT']['bot_token']
 
         # TODO: save + load from save. make static?
         self.user_radiuses_deg = dict()
@@ -68,20 +69,21 @@ class ForestBot:
                         "обнаружено \n\nПример:\n/set_sensitivity 0.3"
             words = message.text.split(' ')
             if len(words) != 2 or not is_float(words[1]) or not 0 < float(words[1]) < 1:
-                self.bot.send_message(message.chat.id, msg_wrong)
+
+                self.send_text_message(message.chat.id, msg_wrong)
             else:
                 # higher sensitivity => lower threshold
                 new_threshold = 1 - float(words[1])
                 self.user_thresholds[message.chat.id] = new_threshold
-                self.bot.send_message(message.chat.id, f"Установлена новая чувствительность: {1 - new_threshold:.2f}")
+                self.send_text_message(message.chat.id, f"Установлена новая чувствительность: {1 - new_threshold:.2f}")
 
         @self.bot.message_handler(commands=['start'])
         def handle_start_message(message) -> None:
-            self.bot.send_message(message.chat.id, self.start_message)
+            self.send_text_message(message.chat.id, self.start_message)
 
         @self.bot.message_handler(commands=['help'])
         def handle_help_message(message) -> None:
-            self.bot.send_message(message.chat.id, self.help_message)
+            self.send_text_message(message.chat.id, self.help_message)
 
         @self.bot.message_handler(commands=['set_radius'])
         def handle_change_radius_message(message) -> None:
@@ -92,16 +94,16 @@ class ForestBot:
                 message=message, min_value=ForestBot.min_radius_km, max_value=ForestBot.max_radius_km)
 
             if not success:
-                self.bot.send_message(message.chat.id, wrong_command_message)
+                self.send_text_message(message.chat.id, wrong_command_message)
             else:
                 self.user_radiuses_deg[message.chat.id] = convert_km_to_deg(custom_radius)
-                self.bot.send_message(message.chat.id,
-                                      f"Радиус снимка успешно установлен: {round(custom_radius, 2)} км")
+                self.send_text_message(message.chat.id,
+                                       f"Радиус снимка успешно установлен: {round(custom_radius, 2)} км")
 
         @self.bot.message_handler(
             content_types=['audio', 'sticker', 'video', 'video_note', 'voice', 'contact', 'web_app_data'])
         def handle_other_types(message) -> None:
-            self.bot.send_message(message.chat.id, self.wrong_file_format_message)
+            self.send_text_message(message.chat.id, self.wrong_file_format_message)
 
         @self.bot.message_handler(content_types=['document'])
         @self.bot.message_handler(content_types=['photo'])
@@ -117,17 +119,17 @@ class ForestBot:
                 file_id = message.document.file_id
                 file_format = message.document.mime_type.split('/')[1]
                 if not ForestBot.__is_correct_format(file_format):
-                    self.bot.send_message(message.chat.id, self.wrong_file_format_message)
+                    self.send_text_message(message.chat.id, self.wrong_file_format_message)
                     return
 
             file_info = self.bot.get_file(file_id)
             file_url = f'https://api.telegram.org/file/bot{self.bot.token}/{file_info.file_path}'
 
             if not is_correct_size(url=file_url, max_size=ForestBot.max_photo_size, min_size=ForestBot.min_photo_size):
-                self.bot.send_message(message.chat.id, self.wrong_size_message)
+                self.send_text_message(message.chat.id, self.wrong_size_message)
                 return
 
-            self.bot.send_message(message.chat.id, self.accept_photo_message)
+            self.send_text_message(message.chat.id, self.accept_photo_message)
             image_name = generate_image_name(chat_id=message.chat.id, file_format=file_format)
             urllib.request.urlretrieve(file_url, f"input_photos/{image_name}")
             chat_id = message.chat.id
@@ -140,7 +142,7 @@ class ForestBot:
         def handle_text_cords_message(message) -> None:
             success, cords = get_cords_from_msg(message.text)
             if not success:
-                self.bot.send_message(message.chat.id, self.wrong_cords_message)
+                self.send_text_message(message.chat.id, self.wrong_cords_message)
             else:
                 self.__handle_cords_input(chat_id=message.chat.id, cords=cords)
 
@@ -160,7 +162,7 @@ class ForestBot:
 
             self.bot.answer_callback_query(call.id, 'Принято 👍')
             self.bot.edit_message_reply_markup(chat_id=chat_id, message_id=msg_id, reply_markup=None)
-            self.bot.send_message(chat_id, "Экспортируем результат в формат OSM...")
+            self.send_text_message(chat_id, "Экспортируем результат в формат OSM...")
 
             Thread(target=__send_osm, args=[chat_id, mask, func]).start()
 
@@ -171,6 +173,15 @@ class ForestBot:
             :param mask: predicted mask
             :param func: function for converting coordinates
             """
+
+            def send_document(chat_id, document):
+                Thread(target=send_document_with_retry, kwargs={
+                    'bot': self.bot,
+                    'chat_id': chat_id,
+                    'document': document,
+                    'max_attempts': ForestBot.max_attempts
+                }).start()
+
             file_name = f"{round(time.time() * 100000)}.osm"
             file_path = Path(f'osm/{file_name}')
             result = get_lines(mask, func)
@@ -178,8 +189,8 @@ class ForestBot:
             with open(file_path, 'w') as f:
                 ET.ElementTree(result).write(f, encoding='unicode')
 
-            with open(file_path, 'rb') as f:
-                self.bot.send_document(chat_id=chat_id, document=f, caption="Готово!")
+            f = open(file_path, 'rb')
+            send_document(chat_id=chat_id, document=f)
 
         @self.bot.callback_query_handler(func=is_processing_call)
         def callback_for_processing_choice(call):
@@ -193,17 +204,17 @@ class ForestBot:
             if answer == 'y':
                 if time.time() - date > ForestBot.out_date_time:
                     self.bot.answer_callback_query(call.id, 'Сообщение устарело ⌛')
-                    self.bot.send_message(chat_id, 'Похоже, прошло слишком много времени 😱\n'
-                                                   'Отправьте ваши координаты снова, а мы их обработаем 🚀')
+                    self.send_text_message(chat_id, 'Похоже, прошло слишком много времени 😱\n'
+                                                    'Отправьте ваши координаты снова, а мы их обработаем 🚀')
                 else:
                     self.bot.answer_callback_query(call.id, 'Принято 👍')
-                    self.bot.send_message(chat_id, 'Начинаем поиск 🔍')
+                    self.send_text_message(chat_id, 'Начинаем поиск 🔍')
                     self.controller.request_queue.put(
                         Artifact(chat_id, image_name, self.user_thresholds.get(chat_id, self.default_threshold)))
             else:
                 self.bot.answer_callback_query(call.id, 'Отмена 🚫')
-                self.bot.send_message(chat_id, 'Поиск отменен. Хотите изучить другую местность ?🤗'
-                                               '\nПросто отправьте координаты или снимок!')
+                self.send_text_message(chat_id, 'Поиск отменен. Хотите изучить другую местность ?🤗'
+                                                '\nПросто отправьте координаты или снимок!')
 
     def __handle_cords_input(self, chat_id, cords) -> None:
         """
@@ -235,9 +246,9 @@ class ForestBot:
         message_text = "Ваши координаты приняты. Загружаем снимок "
         msg = self.bot.send_message(chat_id, message_text + states[0])
         if self.download_satellite_queue_size > ForestBot.min_download_size_to_notify:
-            self.bot.send_message(chat_id,
-                                  f"В данный момент нам поступило достаточно много запросов на загрузку снимков.\n"
-                                  f"Номер вашего запроса в очереди: {self.download_satellite_queue_size}")
+            self.send_text_message(chat_id,
+                                   f"В данный момент нам поступило достаточно много запросов на загрузку снимков.\n"
+                                   f"Номер вашего запроса в очереди: {self.download_satellite_queue_size}")
         for i in range(1, 124):
             self.bot.edit_message_text(message_text + states[i % 3], chat_id, msg.id)
             time.sleep(0.5)
@@ -259,8 +270,8 @@ class ForestBot:
                 )
             except Exception as ex:
                 print(f"Failed to load satellite images:\n{ex}")
-                self.bot.send_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
-                                               "Вы - отважный путешественник, раз решили отправиться туда!")
+                self.send_text_message(chat_id, "Не удалось обнаружить спутниковые снимки в данном районе. Похоже, "
+                                                "Вы - отважный путешественник, раз решили отправиться туда!")
             finally:
                 self.download_satellite_queue_size -= 1
 
@@ -338,13 +349,18 @@ class ForestBot:
 
                 try:
                     # Try to ask user for retry if it is possible
-                    self.bot.send_message(chat_id, self.failed_to_send_message)
+                    self.send_text_message(chat_id, self.failed_to_send_message)
                 except Exception as exception:
                     print('=' * 10, f"\nLost connection with chat id = {chat_id}\n{exception}\n", '=' * 10, sep='')
         else:
             if attempt:
                 print(
                     f"!!!\nSuccessfully send by {attempt}th attempt.\nChat id = {chat_id}, img = {result_path}\n!!!\n")
+
+    def send_text_message(self, chat_id: int, text: str) -> None:
+        Thread(target=send_text_message_with_retry, kwargs={
+            'bot': self.bot, 'chat_id': chat_id, 'text': text, 'max_attempts': ForestBot.max_attempts
+        }).start()
 
     @staticmethod
     def __is_image_size_correct(photo) -> bool:

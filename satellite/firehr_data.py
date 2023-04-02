@@ -4,6 +4,7 @@ import time
 
 import ee
 import os
+import configparser
 import requests
 import rasterio
 import pandas as pd
@@ -16,8 +17,10 @@ from multiprocessing import Process
 
 from tqdm.auto import tqdm
 
+config = configparser.ConfigParser()
+config.read("settings.ini")
+proj_name = config['GCLOUD']['project_name']
 
-proj_name = "forest-bot-browser-proj"
 
 class RegionST(Region):
     "Defines a region in space and time with a name, a bounding box and the pixel size."

@@ -109,3 +109,30 @@ def is_processing_call(call) -> bool:
 def is_osm_call(call) -> bool:
     # TODO: make another classification
     return call.data.split()[0] == 'osm'
+
+
+def send_text_message_with_retry(bot, chat_id: int, text: str, max_attempts: int, attempt=0) -> None:
+    try:
+        bot.send_message(chat_id=chat_id, text=text)
+    except Exception as e:
+        if attempt < max_attempts:
+            time.sleep(1)
+            send_text_message_with_retry(bot=bot, chat_id=chat_id, text=text, max_attempts=max_attempts,
+                                         attempt=attempt + 1)
+            print(e)
+        else:
+            print('=' * 10, f"\nFailed to send message\nchat_id = {chat_id}\n", '=' * 10, sep='')
+
+
+def send_document_with_retry(bot, chat_id: int, document, max_attempts: int, attempt=0) -> None:
+    try:
+        bot.send_document(chat_id=chat_id, document=document, caption="Готово!")
+        document.close()
+    except Exception as e:
+        if attempt < max_attempts:
+            time.sleep(1)
+            send_document_with_retry(bot=bot, chat_id=chat_id, document=document, max_attempts=max_attempts,
+                                     attempt=attempt + 1)
+            print(e)
+        else:
+            print('=' * 10, f"\nFailed to send message\nchat_id = {chat_id}\n", '=' * 10, sep='')
