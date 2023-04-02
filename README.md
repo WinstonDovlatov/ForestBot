@@ -44,7 +44,7 @@ application.py
 5. Создайте и заполните файл settings.ini в корневой папке по шаблону [settings_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/settings_example.ini)
 5. Собирите образ 
 
-    ```docker build -t bot_image ```
+    ```docker build -t bot_image .```
 6. Запустите его.
 
     ```docker run -it --name forest_bot bot_image```
