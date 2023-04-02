@@ -6,3 +6,4 @@ processes/model_epoch059_loss0.pt
 processes/model.onnx
 __pycache__
 .idea
+settings.ini
