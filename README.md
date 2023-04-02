@@ -37,7 +37,7 @@ application.py
 
 ### Как собрать
 
-1. Создайте проект Google https://console.cloud.google.com/projectcreate
+1. [Создайте проект Google Cloud](https://console.cloud.google.com/projectcreate)
 2. Подключите к нему Google Earth Engine API через API Library
 3. Склонируйте репозиторий
 4. Скачайте файл model.onnx и поместите его в папку "processes"
