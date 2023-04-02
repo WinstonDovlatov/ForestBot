@@ -28,7 +28,7 @@
 а затем и найдет на нем дороги!
 
 
-<img src="readme_images/example_cords_lq.gif" width="414" height="896">
+<img src="readme_images/example_cords_lq.gif" width="330" height="716">
 
 ## Реализация 
 
