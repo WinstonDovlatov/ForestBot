@@ -1,6 +1,10 @@
 input_photos
 result_photos
+readme_images
 osm
 processes/model_epoch059_loss0.pt
+README.md
+settings_example.ini
 __pycache__
 .idea
+.gitignore
