@@ -2,6 +2,7 @@ input_photos
 result_photos
 readme_images
 osm
+Dockerfile
 processes/model_epoch059_loss0.pt
 README.md
 settings_example.ini
