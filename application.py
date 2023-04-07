@@ -1,6 +1,7 @@
 from forest_bot_front.forest_bot import ForestBot
 import os
 import time
+from forest_bot_front.cleaner import Cleaner
 
 
 def start_bot() -> None:
@@ -21,4 +22,5 @@ if __name__ == "__main__":
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+    Cleaner(target_dirs=required_folders).start()
     start_bot()

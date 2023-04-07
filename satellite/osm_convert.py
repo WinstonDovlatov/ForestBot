@@ -6,7 +6,7 @@ import cv2
 import xml.etree.ElementTree as ET
 
 
-def get_lines(mask, coord_transform: Callable):
+def generate_osm(mask, coord_transform: Callable):
     skel = np.zeros(mask.shape, np.uint8)
     element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     img = mask.copy()

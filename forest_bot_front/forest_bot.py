@@ -1,15 +1,17 @@
+import shutil
 import urllib.request
 from ml_backend.controller import Controller, Artifact
 from forest_bot_front.image_analyzer.size_analyzer import is_correct_size
 from forest_bot_front.utils import *
 from satellite.satellite_data import download_rect
-from satellite.osm_convert import get_lines
+from satellite.osm_convert import generate_osm
 from threading import Thread, Lock
 from pathlib import Path
 import telebot
 import numpy as np
 import configparser
 import xml.etree.ElementTree as ET
+import os
 
 
 class ForestBot:
@@ -54,6 +56,7 @@ class ForestBot:
         self.img_to_func = dict()
 
         Thread(target=self.controller.observe_updates).start()
+        print("Bot is running")
 
     def start(self) -> None:
         """Start the bot. Thread will be captured"""
@@ -156,6 +159,13 @@ class ForestBot:
             # TODO: добавить устаревание
             chat_id = call.from_user.id
             msg_id = call.message.message_id
+            date = call.message.date
+
+            if time.time() - date > ForestBot.out_date_time:
+                self.bot.answer_callback_query(call.id, 'Сообщение устарело ⌛')
+                self.send_text_message(chat_id, 'Похоже, прошло слишком много времени 😱\n'
+                                                'Отправьте ваши координаты снова, а мы их обработаем 🚀')
+
             img_name = call.data.split()[1]
             mask = self.img_to_mask[img_name]
             func = self.img_to_func[img_name]
@@ -184,7 +194,7 @@ class ForestBot:
 
             file_name = f"{round(time.time() * 100000)}.osm"
             file_path = Path(f'osm/{file_name}')
-            result = get_lines(mask, func)
+            result = generate_osm(mask, func)
 
             with open(file_path, 'w') as f:
                 ET.ElementTree(result).write(f, encoding='unicode')
@@ -250,7 +260,10 @@ class ForestBot:
                                    f"В данный момент нам поступило достаточно много запросов на загрузку снимков.\n"
                                    f"Номер вашего запроса в очереди: {self.download_satellite_queue_size}")
         for i in range(1, 124):
-            self.bot.edit_message_text(message_text + states[i % 3], chat_id, msg.id)
+            try:
+                self.bot.edit_message_text(message_text + states[i % 3], chat_id, msg.id)
+            except Exception as e:
+                time.sleep(3)
             time.sleep(0.5)
 
     def __download_satellite(self, image_name, cords, radius, download_dir, chat_id) -> None:
@@ -265,6 +278,7 @@ class ForestBot:
                 self.__send_image_with_retry(
                     result_path=download_dir / image_name,
                     chat_id=chat_id,
+                    delete_result=False,
                     caption=f'Снимок местности по вашим координатам:\n{cords[0]}, {cords[1]}\n',
                     reply_markup=generate_buttons_continue(image_name)
                 )
@@ -277,7 +291,7 @@ class ForestBot:
 
     def __init_messages(self) -> None:
         """Loads basic messages from files."""
-        # TODO: do DRY. JSON?
+        # TODO: JSON?
         with open("forest_bot_front/messages/start_message.txt", encoding="UTF-8") as f:
             self.start_message = f.read()
 
@@ -303,7 +317,6 @@ class ForestBot:
             self.help_message = f.read()
 
     def __send_prediction_callback(self, result_path: Path, chat_id: int, mask: np.ndarray, image_name=None) -> None:
-        # TODO: refactor
         """
         Callback for completed prediction.
         :param Path result_path: path to the result image
@@ -315,12 +328,13 @@ class ForestBot:
             kwargs={
                 'result_path': result_path,
                 'chat_id': chat_id,
+                'delete_result': True,
                 'reply_markup': generate_buttons_osm(image_name) if image_name in self.img_to_func else None
             }
         ).start()
 
     def __send_image_with_retry(self, result_path: Path, chat_id: int, attempt: int = 0, caption: str = "Готово!🥳",
-                                **kwargs) -> None:
+                                delete_result: bool = False, **kwargs) -> None:
         """
         Method for sending the processed image. Applies multiple retries on failed submission.
         :param Path result_path: path to the image
@@ -330,8 +344,14 @@ class ForestBot:
         """
         try:
             # Try to read and send result
-            result = open(result_path, 'rb')
-            self.bot.send_photo(chat_id=chat_id, photo=result, caption=caption, **kwargs)
+            with open(result_path, 'rb') as result:
+                self.bot.send_photo(chat_id=chat_id, photo=result, caption=caption, **kwargs)
+            if delete_result:
+                try:
+                    os.remove(result_path)
+                    os.remove(Path('input_photos') / result_path.name)
+                except Exception as e:
+                    print(e)
         except Exception as exception:
             print(
                 f"Attempt {attempt}/{ForestBot.max_attempts} failed. Trying again...\n"
@@ -346,7 +366,10 @@ class ForestBot:
             else:
                 # Maximum number of attempts made. Ask user to retry
                 print('=' * 10, f"\nFailed to send\nchat_id = {chat_id}\nimg = {result_path}\n", '=' * 10, sep='')
-
+                try:
+                    os.remove(result_path)
+                except Exception as e:
+                    print(e)
                 try:
                     # Try to ask user for retry if it is possible
                     self.send_text_message(chat_id, self.failed_to_send_message)

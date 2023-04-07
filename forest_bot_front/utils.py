@@ -1,6 +1,7 @@
 from typing import Union, Tuple
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
+import os
 
 wrong_msg = (False, None)
 
@@ -128,6 +129,11 @@ def send_document_with_retry(bot, chat_id: int, document, max_attempts: int, att
     try:
         bot.send_document(chat_id=chat_id, document=document, caption="Готово!")
         document.close()
+        try:
+            os.remove(document.name)
+        except Exception as e:
+            print(e)
+
     except Exception as e:
         if attempt < max_attempts:
             time.sleep(1)
@@ -136,3 +142,4 @@ def send_document_with_retry(bot, chat_id: int, document, max_attempts: int, att
             print(e)
         else:
             print('=' * 10, f"\nFailed to send message\nchat_id = {chat_id}\n", '=' * 10, sep='')
+
