@@ -42,13 +42,13 @@ application.py
 3. Склонируйте репозиторий
 4. Скачайте файл [model.onnx](https://drive.google.com/file/d/1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk/view?usp=sharing) и поместите его в папку "processes"
 5. Создайте и заполните файл settings.ini в корневой папке по шаблону [settings_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/settings_example.ini)
-5. Собирите образ 
+6. Собирите образ 
 
     ```docker build -t bot_image .```
-6. Запустите его.
+7. Запустите его.
 
     ```docker run -it --name forest_bot bot_image```
-7. В открывшейся консоли необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. Для этого:
+8. В открывшейся консоли необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. Для этого:
     * Установите GCloud выполнив:
        
         ```./google-cloud-sdk/install.sh```
@@ -81,14 +81,6 @@ application.py
    * Запустите бота
    
         ```python application.py```
-
-
-### Описание структуры проекта
-
-* forest_bot_front - модуль для взаимодействия с Telegram
-* ml_backend - модуль для обработки полученных изображений с помощью модели
-* satellite - модуль для загрузки спутниковых снимков
-* processes - папка с сторонними процессами, которые используются перед работой
 
 ### TODO
 

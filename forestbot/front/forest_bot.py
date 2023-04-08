@@ -1,10 +1,9 @@
-import shutil
 import urllib.request
-from ml_backend.controller import Controller, Artifact
-from forest_bot_front.image_analyzer.size_analyzer import is_correct_size
-from forest_bot_front.utils import *
-from satellite.satellite_data import download_rect
-from satellite.osm_convert import generate_osm
+from forestbot.ml_backend.controller import Controller, Artifact
+from forestbot.front.image_analyzer.size_analyzer import is_correct_size
+from forestbot.satellite.satellite_data import download_rect
+from forestbot.satellite.osm_convert import generate_osm
+from forestbot.front.utils import *
 from threading import Thread, Lock
 from pathlib import Path
 import telebot
@@ -34,7 +33,8 @@ class ForestBot:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read("settings.ini")
+        config.read(Path("settings.ini"))
+
         token = config['BOT']['bot_token']
 
         # TODO: save + load from save. make static?
@@ -292,28 +292,30 @@ class ForestBot:
     def __init_messages(self) -> None:
         """Loads basic messages from files."""
         # TODO: JSON?
-        with open("forest_bot_front/messages/start_message.txt", encoding="UTF-8") as f:
+        msg_path = Path("forestbot/front/messages")
+
+        with open(msg_path / "start_message.txt", encoding="UTF-8") as f:
             self.start_message = f.read()
 
-        with open("forest_bot_front/messages/accept_photo_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "accept_photo_message.txt", encoding="UTF-8") as f:
             self.accept_photo_message = f.read()
 
-        with open("forest_bot_front/messages/ready_img_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "ready_img_message.txt", encoding="UTF-8") as f:
             self.ready_img_message = f.read()
 
-        with open("forest_bot_front/messages/failed_to_send_img_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "failed_to_send_img_message.txt", encoding="UTF-8") as f:
             self.failed_to_send_message = f.read()
 
-        with open("forest_bot_front/messages/wrong_cords_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "wrong_cords_message.txt", encoding="UTF-8") as f:
             self.wrong_cords_message = f.read()
 
-        with open("forest_bot_front/messages/wrong_file_format_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "wrong_file_format_message.txt", encoding="UTF-8") as f:
             self.wrong_file_format_message = f.read()
 
-        with open("forest_bot_front/messages/wrong_size_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "wrong_size_message.txt", encoding="UTF-8") as f:
             self.wrong_size_message = f.read()
 
-        with open("forest_bot_front/messages/help_message.txt", encoding="UTF-8") as f:
+        with open(msg_path / "help_message.txt", encoding="UTF-8") as f:
             self.help_message = f.read()
 
     def __send_prediction_callback(self, result_path: Path, chat_id: int, mask: np.ndarray, image_name=None) -> None:

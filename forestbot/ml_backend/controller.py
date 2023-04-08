@@ -1,7 +1,7 @@
 import queue
 import time
-from ml_backend.model import Model
-import ml_backend.utils
+from forestbot.ml_backend.model import Model
+from forestbot.ml_backend.utils import *
 from PIL import Image
 from pathlib import Path
 import cv2
@@ -54,17 +54,17 @@ class Controller:
         """Do all prediction work and notify bot about finish using callback"""
         current = Controller.request_queue.get()
         raw_input = np.asarray(Image.open(Path(f"input_photos/{current.img_name}")).convert("RGB"))
-        model_input = ml_backend.utils.preprocess(raw_input)
+        model_input = preprocess(raw_input)
 
         if self.use_crop:
-            model_input = ml_backend.utils.resize_for_cropping(model_input, self.crop_size)
+            model_input = resize_for_cropping(model_input, self.crop_size)
             prediction = self.model.predict_proba_crop(model_input, crop_size=self.crop_size)
 
         else:
-            model_input = ml_backend.utils.resize_to_model_input(model_input, self.crop_size)
+            model_input = resize_to_model_input(model_input, self.crop_size)
             prediction = self.model.predict_proba(model_input)
 
-        result, mask = ml_backend.utils.postprocess(raw_input, prediction, current.threshold)
+        result, mask = postprocess(raw_input, prediction, current.threshold)
 
         result_path = Path(f"result_photos/{current.img_name}").with_suffix(".png")
         cv2.imwrite(str(result_path), result)

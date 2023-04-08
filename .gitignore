@@ -1,8 +1,8 @@
 input_photos
 result_photos
 osm
-processes/model_epoch059_loss0.pt
-processes/model.onnx
+forestbot/processes/model_epoch059_loss0.pt
+forestbot/processes/model.onnx
 __pycache__
 .idea
 settings.ini

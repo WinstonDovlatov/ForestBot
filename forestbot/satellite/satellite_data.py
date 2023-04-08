@@ -1,8 +1,8 @@
 import shutil
 from pathlib import Path
 import math
-
-from satellite.firehr_data import RegionST, download_data
+from typing import Tuple
+from forestbot.satellite.firehr_data import RegionST, download_data
 from PIL import Image
 import rasterio
 import numpy as np
@@ -24,7 +24,7 @@ def epsg3857_to_epsg4326(x, y):
     return y, x
 
 
-def download_rect(image_name, center: (float, float), radius: float, download_dir: Path):
+def download_rect(image_name, center: Tuple[float, float], radius: float, download_dir: Path):
     """
     Must run ee.Initialize() at least once before
     :param image_name: name of the region

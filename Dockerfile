@@ -1,8 +1,8 @@
 FROM python:3.8-slim
 ENV CONDA_DIR /opt/conda
 
-RUN mkdir -p /usr/src/forest_bot
-WORKDIR /usr/scr/forest_bot
+RUN mkdir -p /usr/src/workdir
+WORKDIR /usr/scr/workdir
 
 COPY . .
 

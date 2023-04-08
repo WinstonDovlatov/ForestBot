@@ -1,15 +1,15 @@
-from forest_bot_front.forest_bot import ForestBot
+from forestbot.front.forest_bot import ForestBot
 import os
 import time
-from forest_bot_front.cleaner import Cleaner
-
+import traceback
+from forestbot.front.cleaner import Cleaner
 
 def start_bot() -> None:
     try:
         forest_bot = ForestBot()
         forest_bot.start()
-    except Exception as e:
-        print(f"Failed to run bot. Restarting with 3 seconds delay...\n{e}")
+    except Exception:
+        print(f"Failed to run bot. Restarting with 3 seconds delay...\n{traceback.format_exc()}")
         time.sleep(3)
         start_bot()
     else:
