@@ -5,7 +5,7 @@ osm
 Dockerfile
 forestbot/processes/model_epoch059_loss0.pt
 README.md
-settings_example.ini
+credentials_example.ini
 __pycache__
 .idea
 .gitignore

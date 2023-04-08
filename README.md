@@ -37,50 +37,77 @@ application.py
 
 ### Как собрать
 
+#### Регистрация в Google Cloud
+
 1. [Создайте проект Google Cloud](https://console.cloud.google.com/projectcreate)
 2. Подключите к нему Google Earth Engine API через API Library
-3. Склонируйте репозиторий
-4. Скачайте файл [model.onnx](https://drive.google.com/file/d/1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk/view?usp=sharing) и поместите его в папку "processes"
-5. Создайте и заполните файл settings.ini в корневой папке по шаблону [settings_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/settings_example.ini)
-6. Собирите образ 
+
+#### Ручная сборка контейнера
+
+1. Склонируйте репозиторий
+2. Скачайте модель [model.onnx](https://drive.google.com/file/d/1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk/view?usp=sharing) и поместите ее в папку ["forestbot/processes"](https://github.com/WinstonDovlatov/ForestBot/tree/master/forestbot/processes)
+3. Создайте и заполните файл с реквизитами credentials.ini в корневой папке по шаблону [credentials_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/credentials_example.ini)
+или с помощью команды:
+    
+    ```python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
+4. Собирите образ 
 
     ```docker build -t bot_image .```
-7. Запустите его.
+    
+5. Запустите его
 
     ```docker run -it --name forest_bot bot_image```
-8. В открывшейся консоли необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. Для этого:
-    * Установите GCloud выполнив:
-       
-        ```./google-cloud-sdk/install.sh```
-        
-        Со всеми пунктами соглашаемся. Путь оставляем пустным
-        
-    * Авторизуйтесь
     
-        ```./google-cloud-sdk/bin/gcloud init```
-        
-       Здесь потребуется скопировать ссылку полностью и выполнить авторизацию
-       в браузере на вашей машине. Полученный код вставить в терминал
-       
-   * Перезапускаем терминал
+#### Альтернативно: скачать готовый образ
+
+1. Скачайте образ
+
+    ```docker pull ???```
+    
+2. Запустите контейнер
+
+    ```docker run -it --name forest_bot ????```
+    
+3. Внутри докера необходимо сгенирировать реквизиты
+
+    ```python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
+     
+#### Автоизация в GoogleCloud и запуск бота
+В открывшейся консоли контейнера необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. 
+Для этого:
+
+1. Установите GCloud выполнив:
    
-        ```bash```
-   * Выполните авторизацию в Earth Engine
+    ```./google-cloud-sdk/install.sh```
+    
+    Со всеми пунктами соглашаемся. Путь оставляем пустным
+    
+2. Авторизуйтесь
+
+    ```./google-cloud-sdk/bin/gcloud init```
+    
+   Здесь потребуется скопировать ссылку полностью и выполнить авторизацию
+   в браузере на вашей машине. Полученный код вставить в терминал
    
-        ```earthengine authenticate --quiet```
-        
-        Вы получите команду, которую необходимо выполнить на вашей машине, на
-        которой имеется браузер. Перед вставкой в терминал удалите переносы строк.
-        Далее на вашей машине:
-        
-        * Установите и авторизуйтесь в GCloud, следуя [инструкциям](https://cloud.google.com/sdk/docs/install)
-        * Выполните скопированную команду и авторизуйтесь в браузере
-        * Скопируйте ссылку, которая появится в терминале. Не забудьте удалить переносы строк
-        * Полученную ссылку вставьте в терминал докер-контейнера
-        
-   * Запустите бота
+3. Перезапускаем терминал
    
-        ```python application.py```
+    ```bash```
+4. Выполните авторизацию в Earth Engine
+
+    ```earthengine authenticate --quiet```
+
+    Вы получите команду, которую необходимо выполнить на вашей машине, на
+    которой имеется браузер. Перед вставкой в терминал удалите переносы строк.
+    Далее на вашей машине:
+
+    * Установите и авторизуйтесь в GCloud, следуя [инструкциям](https://cloud.google.com/sdk/docs/install)
+    * Выполните скопированную команду и авторизуйтесь в браузере
+    * Скопируйте ссылку, которая появится в терминале. Не забудьте удалить переносы строк
+    * Полученную ссылку вставьте в терминал докер-контейнера
+        
+5. Запустите бота
+
+    ```python application.py```
 
 ### TODO
 
