@@ -51,7 +51,7 @@
 
 1. Склонируйте репозиторий
    
-   ```$ git clone git@github.com:WinstonDovlatov/ForestBot.git```
+   ```$ git clone https://github.com/WinstonDovlatov/ForestBot.git```
    
    и перейдите к корневую папку
    
