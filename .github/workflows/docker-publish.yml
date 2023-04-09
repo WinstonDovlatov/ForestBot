@@ -7,7 +7,7 @@ on:
     branches: [ "master" ]
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/${{ github.repository.string.outputs.lowercase }}
 
 
 jobs:
