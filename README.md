@@ -50,6 +50,13 @@
 #### III. Ручная сборка контейнера
 
 1. Склонируйте репозиторий
+   
+   ```$ git clone git@github.com:WinstonDovlatov/ForestBot.git```
+   
+   и перейдите к корневую папку
+   
+   ``` $ cd forestbot ```
+
 2. Скачайте модель [model.onnx](https://drive.google.com/file/d/1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk/view?usp=sharing) и поместите ее в папку ["forestbot/processes"](https://github.com/WinstonDovlatov/ForestBot/tree/master/forestbot/processes)
 3. Создайте и заполните файл с реквизитами credentials.ini в корневой папке по шаблону [credentials_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/credentials_example.ini)
 или с помощью команды:
