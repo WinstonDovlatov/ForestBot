@@ -33,7 +33,7 @@
 ## Реализация 
 
 ### Точка входа:
-application.py
+[entrypoint.py](https://github.com/WinstonDovlatov/ForestBot/blob/master/entrypoint.py)
 
 ### Как собрать
 
@@ -42,7 +42,12 @@ application.py
 1. [Создайте проект Google Cloud](https://console.cloud.google.com/projectcreate)
 2. Подключите к нему Google Earth Engine API через API Library
 
-#### II. Ручная сборка контейнера
+#### II. Создание бота в Telegram
+
+1. Зарегистрируйте вашего бота с помощью [BotFather](https://telegram.me/BotFather) 
+2. Сохраните полученный токен. Он пригодится далее в шаге *III* при генерации реквизитов
+
+#### III. Ручная сборка контейнера
 
 1. Склонируйте репозиторий
 2. Скачайте модель [model.onnx](https://drive.google.com/file/d/1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk/view?usp=sharing) и поместите ее в папку ["forestbot/processes"](https://github.com/WinstonDovlatov/ForestBot/tree/master/forestbot/processes)
@@ -58,7 +63,7 @@ application.py
 
     ```docker run -it --name forest_bot bot_image```
     
-#### *II. Альтернативно: скачать готовый образ
+#### *III. Альтернативно: скачать готовый образ
 
 1. Скачайте образ
 
@@ -72,7 +77,7 @@ application.py
 
     ```python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
      
-#### III. Автоизация в GoogleCloud и запуск бота
+#### IV. Автоизация в GoogleCloud и запуск бота
 В открывшейся консоли контейнера необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. 
 Для этого:
 
@@ -107,7 +112,7 @@ application.py
         
 5. Запустите бота
 
-    ```python application.py```
+    ```python entrypoint.py```
 
 ### TODO
 
