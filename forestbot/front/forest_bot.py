@@ -387,11 +387,11 @@ class ForestBot:
             'bot': self.bot, 'chat_id': chat_id, 'text': text, 'max_attempts': ForestBot.max_attempts
         }).start()
 
-    @staticmethod
-    def __is_image_size_correct(photo) -> bool:
-        return (ForestBot.min_photo_size <= photo[-1].width <= ForestBot.max_photo_size) and (
-                ForestBot.min_photo_size <= photo[-1].height <= ForestBot.max_photo_size)
+    @classmethod
+    def __is_image_size_correct(cls, photo) -> bool:
+        return (cls.min_photo_size <= photo[-1].width <= cls.max_photo_size) and (
+                cls.min_photo_size <= photo[-1].height <= cls.max_photo_size)
 
-    @staticmethod
-    def __is_correct_format(file_format: str) -> bool:
-        return file_format in ForestBot.valid_formats
+    @classmethod
+    def __is_correct_format(cls, file_format: str) -> bool:
+        return file_format in cls.valid_formats
