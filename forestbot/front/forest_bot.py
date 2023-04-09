@@ -197,7 +197,7 @@ class ForestBot:
             result = generate_osm(mask, func)
 
             with open(file_path, 'w') as f:
-                ET.ElementTree(result).write(f, encoding='unicode')
+                ET.ElementTree(result).write(f, encoding='unicode', xml_declaration=True)
 
             f = open(file_path, 'rb')
             send_document(chat_id=chat_id, document=f)

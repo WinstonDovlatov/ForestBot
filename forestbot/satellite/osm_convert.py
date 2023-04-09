@@ -26,15 +26,15 @@ def generate_osm(mask, coord_transform: Callable):
     osm = ET.Element("osm", attrib={"version": "0.6"})
 
     nodes = {}
-    count = 0
+    count = 1
     for way in cont:
-        way_el = ET.SubElement(osm, "way", {"id": str(count)})
+        way_el = ET.SubElement(osm, "way", {"id": str(count), "version": "1"})
         count += 1
         for x, y in way.squeeze(1):
             lat, lon = coord_transform(x, y)
             if (lat, lon) not in nodes:
                 nodes[(lat, lon)] = count
-                ET.SubElement(osm, "node", {"id": str(count), "lat": str(lat), "lon": str(lon)})
+                ET.SubElement(osm, "node", {"id": str(count), "lat": str(lat), "lon": str(lon), "version": "1"})
                 count += 1
             ET.SubElement(way_el, "nd", {"ref": str(nodes[(lat, lon)])})
 
