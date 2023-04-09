@@ -54,28 +54,28 @@
 3. Создайте и заполните файл с реквизитами credentials.ini в корневой папке по шаблону [credentials_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/credentials_example.ini)
 или с помощью команды:
     
-    ```python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
+    ```$ python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
 4. Собирите образ 
 
-    ```docker build -t bot_image .```
+    ```$ docker build -t bot_image .```
     
 5. Запустите его
 
-    ```docker run -it --name forest_bot bot_image```
+    ```$ docker run -it --name forest_bot bot_image```
     
 #### *III. Альтернативно: скачать готовый образ
 
-1. Скачайте образ
+1. Скачайте [образ](https://github.com/WinstonDovlatov/ForestBot/pkgs/container/forestbot)
 
-    ```docker pull ???```
+    ```$ docker pull ghcr.io/winstondovlatov/forestbot:latest```
     
 2. Запустите контейнер
 
-    ```docker run -it --name forest_bot ????```
+    ```$ docker run -it --name forest_bot winstondovlatov/forestbot```
     
 3. Внутри докера необходимо сгенирировать реквизиты
 
-    ```python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
+    ```$ python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
      
 #### IV. Автоизация в GoogleCloud и запуск бота
 В открывшейся консоли контейнера необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. 
@@ -83,23 +83,23 @@
 
 1. Установите GCloud выполнив:
    
-    ```./google-cloud-sdk/install.sh```
+    ```$ ./google-cloud-sdk/install.sh```
     
     Со всеми пунктами соглашаемся. Путь оставляем пустным
     
 2. Авторизуйтесь
 
-    ```./google-cloud-sdk/bin/gcloud init```
+    ```$ ./google-cloud-sdk/bin/gcloud init```
     
    Здесь потребуется скопировать ссылку полностью и выполнить авторизацию
    в браузере на вашей машине. Полученный код вставить в терминал
    
 3. Перезапускаем терминал
    
-    ```bash```
+    ```$ bash```
 4. Выполните авторизацию в Earth Engine
 
-    ```earthengine authenticate --quiet```
+    ```$ earthengine authenticate --quiet```
 
     Вы получите команду, которую необходимо выполнить на вашей машине, на
     которой имеется браузер. Перед вставкой в терминал удалите переносы строк.
@@ -112,7 +112,7 @@
         
 5. Запустите бота
 
-    ```python entrypoint.py```
+    ```$ python entrypoint.py```
 
 ### TODO
 
