@@ -291,7 +291,6 @@ class ForestBot:
 
     def __init_messages(self) -> None:
         """Loads basic messages from files."""
-        # TODO: JSON?
         msg_path = Path("forestbot/front/messages")
 
         with open(msg_path / "start_message.txt", encoding="UTF-8") as f:
