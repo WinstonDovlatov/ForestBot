@@ -9,7 +9,7 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
-  FULL_IMAGE_NAME: ${{ REGISTRY }}/${{ github.repository | lower }}
+  FULL_IMAGE_NAME: ${{ env.REGISTRY }}/${{ github.repository | lower }}
 
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
       - name: Build and push Docker image
         id: build-and-push
         run: |
-          docker build . -t ${{ FULL_IMAGE_NAME }}:latest
-          docker run ${{ FULL_IMAGE_NAME }}:latest
-          docker push ${{ FULL_IMAGE_NAME }}:latest
+          docker build . -t ${{ env.FULL_IMAGE_NAME }}:latest
+          docker run ${{ env.FULL_IMAGE_NAME }}:latest
+          docker push ${{ env.FULL_IMAGE_NAME }}:latest
           
