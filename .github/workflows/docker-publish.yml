@@ -9,7 +9,7 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
-  FULL_IMAGE_NAME: ghcr.io/${{ github.repository | lower }}
+  FULL_IMAGE_NAME: ghcr.io/${{ github.repository.lower() }}
 
 
 jobs:
