@@ -18,7 +18,7 @@ from multiprocessing import Process
 from tqdm.auto import tqdm
 
 config = configparser.ConfigParser()
-config.read(Path("settings.ini"))
+config.read(Path("credentials.ini"))
 proj_name = config['GCLOUD']['project_name']
 
 

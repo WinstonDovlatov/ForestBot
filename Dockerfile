@@ -4,8 +4,6 @@ ENV CONDA_DIR /opt/conda
 RUN mkdir -p /usr/src/workdir
 WORKDIR /usr/scr/workdir
 
-COPY . .
-
 RUN apt update && apt install -y libhdf4-dev && apt install -y libgeos-dev && apt install -y curl && \
 apt install ffmpeg libsm6 libxext6  -y && apt install -y wget && rm -rf /var/lib/apt/lists/*
 
@@ -19,6 +17,10 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 
 RUN pip install torch~=1.13.1 torchvision~=0.14.1 --index-url https://download.pytorch.org/whl/cpu
 RUN conda install -c conda-forge geos
+
+COPY forestbot ./forestbot
+COPY application.py generate_credentials.py requirements.txt ./
+
 RUN pip install -r requirements.txt
 
 RUN sed -i '/from nbdev.imports import test_eq/d' /opt/conda/lib/python3.10/site-packages/banet/core.py

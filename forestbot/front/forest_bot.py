@@ -33,7 +33,7 @@ class ForestBot:
 
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read(Path("settings.ini"))
+        config.read(Path("credentials.ini"))
 
         token = config['BOT']['bot_token']
 
