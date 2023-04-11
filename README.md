@@ -82,11 +82,11 @@
 
     ```$ docker run -it --name forest_bot winstondovlatov/forestbot```
     
-3. Внутри докера необходимо сгенирировать реквизиты
+3. Внутри котнейнера необходимо сгенирировать реквизиты
 
     ```$ python generate_credentials.py <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
      
-#### IV. Автоизация в GoogleCloud и запуск бота
+#### IV. Авторизация в GoogleCloud и запуск бота
 В открывшейся консоли контейнера необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. 
 Для этого:
 
