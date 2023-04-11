@@ -14,3 +14,4 @@ earthengine-api~=0.1.344
 banet~=0.6.5
 onnx~=1.13.1
 onnxruntime~=1.14.1
+gdown~=4.7.1
