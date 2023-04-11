@@ -25,6 +25,6 @@ RUN pip install -r requirements.txt
 
 RUN sed -i '/from nbdev.imports import test_eq/d' /opt/conda/lib/python3.10/site-packages/banet/core.py
 
-RUN gdwon 1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk && mv model.onnx forestbot/processes/model.onnx
+RUN gdown 1TB5jgmAtDGfUffj9J9SUg8K5AZc7prFk && mv model.onnx forestbot/processes/model.onnx
 
 CMD ["bash"]
