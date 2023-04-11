@@ -82,7 +82,7 @@
     
 3. Внутри докера необходимо сгенирировать реквизиты
 
-    ```$ python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
+    ```$ python generate_credentials.py <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
      
 #### IV. Автоизация в GoogleCloud и запуск бота
 В открывшейся консоли контейнера необходимо выполнить авторизацию в GoogleCloud в интерактивном режиме. 
