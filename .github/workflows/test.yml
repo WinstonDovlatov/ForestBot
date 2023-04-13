@@ -34,12 +34,6 @@ jobs:
 
       - name: Prepare VM
         run: |
-            apt update
-            apt install -y libhdf4-dev
-            apt install -y libgeos-dev
-            apt install -y curl
-            apt install ffmpeg libsm6 libxext6  -y
-            apt install -y wget
             pip install torch~=1.13.1 torchvision~=0.14.1 --index-url https://download.pytorch.org/whl/cpu
             conda install -c conda-forge geos
             
