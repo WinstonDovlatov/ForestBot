@@ -86,12 +86,12 @@ def generate_buttons_osm(image_name) -> InlineKeyboardMarkup:
     return markup
 
 
-def test_document_message_is_image(message) -> bool:
+def is_document_message_is_image(message) -> bool:
     return message.document.mime_type.split('/')[0] == 'image'
 
 
-def test_document_message_not_image(message) -> bool:
-    return not test_document_message_is_image(message)
+def is_document_message_not_image(message) -> bool:
+    return not is_document_message_is_image(message)
 
 
 def generate_image_name(chat_id: int, file_format: str = 'png') -> str:
