@@ -13,13 +13,13 @@ import json
 from pathlib import Path
 import warnings
 from banet.geo import open_tif, merge, Region
-from multiprocessing import Process
+from threading import Thread
 
 from tqdm.auto import tqdm
 
 config = configparser.ConfigParser()
 config.read(Path("credentials.ini"))
-proj_name = config['GCLOUD']['project_name']
+ee.Initialize(project=config['GCLOUD']['project_name'])
 
 
 class RegionST(Region):
@@ -159,7 +159,7 @@ def download_data(R: RegionST, times, products, bands, path_save, scale=None, ma
         loop = enumerate(sR) if not show_progress else tqdm(enumerate(sR), total=len(sR))
         processes = []
         for j, R in loop:
-            p = Process(target=download_image, args=(
+            p = Thread(target=download_image, args=(
                 R, bands, fsaves, j, max_cloud_fraction, path_save, products, scale, times, use_least_cloudy))
             p.Daemon = True
             processes.append(p)
@@ -179,7 +179,6 @@ def download_data(R: RegionST, times, products, bands, path_save, scale=None, ma
 
 
 def download_image(R, bands, fsaves, j, max_cloud_fraction, path_save, products, scale, times, use_least_cloudy):
-    ee.Initialize(project=proj_name)
     region = (f"[[{R.bbox.left}, {R.bbox.bottom}], [{R.bbox.right}, {R.bbox.bottom}], " +
               f"[{R.bbox.right}, {R.bbox.top}], [{R.bbox.left}, {R.bbox.top}]]")
     if not ((path_save / f'download.{R.name}.{bands[0]}_{j}.tif').is_file() and

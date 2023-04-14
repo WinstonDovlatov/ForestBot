@@ -37,6 +37,7 @@ class ForestBot:
 
         token = config['BOT']['bot_token']
 
+
         # TODO: save + load from save. make static?
         self.user_radiuses_deg = dict()
         self.user_thresholds = dict()

@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 class Cleaner:
-    periodicity = 10 * 60
-    time_threshold = 25 * 60
+    periodicity = 100 * 60
+    time_threshold = 250 * 60
     shift_in_name = 100000
 
     def __init__(self, target_dirs):
