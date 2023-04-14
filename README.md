@@ -63,7 +63,7 @@
 3. Создайте и заполните файл с реквизитами credentials.ini в корневой папке по шаблону [credentials_example.ini](https://github.com/WinstonDovlatov/ForestBot/blob/master/credentials_example.ini)
 или с помощью команды:
     
-    ```$ python generate_credentials <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
+    ```$ python generate_credentials.py <YOUR_TELEGRAM_TOKEN> <YOUR_G-CLOUD_PROJECT_NAME>```
 4. Собирите образ 
 
     ```$ docker build -t bot_image .```
