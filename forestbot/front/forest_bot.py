@@ -95,7 +95,7 @@ class ForestBot:
                                     f"{{число в пределах [{ForestBot.min_radius_km}, {ForestBot.max_radius_km}]}}\n\n" \
                                     "Пример:\n/set_radius 2.5"
             success, custom_radius = get_radius_from_msg(
-                message=message, min_value=ForestBot.min_radius_km, max_value=ForestBot.max_radius_km)
+                message=message.text, min_value=ForestBot.min_radius_km, max_value=ForestBot.max_radius_km)
 
             if not success:
                 self.send_text_message(message.chat.id, wrong_command_message)

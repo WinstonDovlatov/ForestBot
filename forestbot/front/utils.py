@@ -21,15 +21,15 @@ def is_float(inp: str) -> bool:
         return False
 
 
-def get_radius_from_msg(message, min_value: float, max_value: float) -> Tuple[bool, Union[float, None]]:
+def get_radius_from_msg(message: str, min_value: float, max_value: float) -> Tuple[bool, Union[float, None]]:
     """
     Extract radius value from /set_radius message if it is possible
-    :param message: input message from telebot
+    :param message: text of message from telebot
     :param min_value: minimum allowable value
     :param max_value: maximum allowable value
     :return: (True, radius) if radius could be extracted and allowable. (False, None) otherwise
     """
-    words = message.text.split()
+    words = message.split()
 
     if len(words) != 2:
         return wrong_msg
@@ -43,10 +43,10 @@ def get_radius_from_msg(message, min_value: float, max_value: float) -> Tuple[bo
         return wrong_msg
 
 
-def get_cords_from_msg(message) -> Tuple[bool, Union[None, Tuple[float, float]]]:
+def get_cords_from_msg(message: str) -> Tuple[bool, Union[None, Tuple[float, float]]]:
     """
     Extract coordinates values from corresponding message if it is possible
-    :param message: input message from bot
+    :param message: text of message from bot
     :return: (True, (latitude_value, longitute_value)) in case of success. (False, None) otherwise
     """
     words = message.split(', ')
@@ -112,12 +112,13 @@ def is_osm_call(call) -> bool:
     return call.data.split()[0] == 'osm'
 
 
-def send_text_message_with_retry(bot, chat_id: int, text: str, max_attempts: int, attempt=0) -> None:
+def send_text_message_with_retry(bot, chat_id: int, text: str, max_attempts: int = 10, delay: float = 1,
+                                 attempt: int = 1) -> None:
     try:
         bot.send_message(chat_id=chat_id, text=text)
     except Exception as e:
         if attempt < max_attempts:
-            time.sleep(1)
+            time.sleep(delay)
             send_text_message_with_retry(bot=bot, chat_id=chat_id, text=text, max_attempts=max_attempts,
                                          attempt=attempt + 1)
             print(e)
@@ -142,4 +143,3 @@ def send_document_with_retry(bot, chat_id: int, document, max_attempts: int, att
             print(e)
         else:
             print('=' * 10, f"\nFailed to send message\nchat_id = {chat_id}\n", '=' * 10, sep='')
-
