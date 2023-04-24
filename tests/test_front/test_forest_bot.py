@@ -134,9 +134,13 @@ def test_handle_other_types(forestbot, handlers, content_type):
     forestbot.bot = MockBot()
     handler(message)
     args, kwargs = forestbot.bot.send_message.call_args
-    assert kwargs['chat_id'] != MockBot.chat_id
+    assert kwargs['chat_id'] == MockBot.chat_id
     assert kwargs['text'] == forestbot.wrong_file_format_message
 
 
-if __name__ == '__main__':
-    print()
+@pytest.mark.parametrize(
+    ("file_format", "is_valid"),
+    (('png', True), ('jpeg', True), ('jpg', True), ('bmp', True), ('tiff', False), ("abc", False))
+)
+def test_is_correct_format(file_format, is_valid):
+    assert ForestBot.is_correct_format(file_format) == is_valid

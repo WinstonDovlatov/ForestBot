@@ -44,7 +44,6 @@ class Model:
         return result
 
     def predict_proba(self, input: np.ndarray) -> np.ndarray:
-        # TODO: test it
         """
         Predict with resized image to model input size
         :param np.ndarray input: preprocessed image

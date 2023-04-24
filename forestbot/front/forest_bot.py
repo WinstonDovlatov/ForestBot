@@ -114,7 +114,7 @@ class ForestBot:
             else:  # document
                 file_id = message.document.file_id
                 file_format = message.document.mime_type.split('/')[1]
-                if not ForestBot.__is_correct_format(file_format):
+                if not ForestBot.is_correct_format(file_format):
                     self.send_text_message(message.chat.id, self.wrong_file_format_message)
                     return
 
@@ -388,10 +388,10 @@ class ForestBot:
         }).start()
 
     @classmethod
-    def __is_image_size_correct(cls, photo) -> bool:
+    def is_image_size_correct(cls, photo) -> bool:
         return (cls.min_photo_size <= photo[-1].width <= cls.max_photo_size) and (
                 cls.min_photo_size <= photo[-1].height <= cls.max_photo_size)
 
     @classmethod
-    def __is_correct_format(cls, file_format: str) -> bool:
+    def is_correct_format(cls, file_format: str) -> bool:
         return file_format in cls.valid_formats
