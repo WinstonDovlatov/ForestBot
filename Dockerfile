@@ -19,7 +19,8 @@ RUN pip install torch~=1.13.1 torchvision~=0.14.1 --index-url https://download.p
 RUN conda install -c conda-forge geos
 
 COPY forestbot ./forestbot
-COPY entrypoint.py generate_credentials.py requirements.txt tests ./
+COPY tests ./tests
+COPY entrypoint.py generate_credentials.py requirements.txt ./
 
 RUN pip install -r requirements.txt
 
