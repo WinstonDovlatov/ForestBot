@@ -119,27 +119,28 @@ def send_text_message_with_retry(bot, chat_id: int, text: str, max_attempts: int
     except Exception as e:
         if attempt < max_attempts:
             time.sleep(delay)
-            send_text_message_with_retry(bot=bot, chat_id=chat_id, text=text, max_attempts=max_attempts,
+            send_text_message_with_retry(bot=bot, chat_id=chat_id, text=text, max_attempts=max_attempts, delay=delay,
                                          attempt=attempt + 1)
             print(e)
         else:
             print('=' * 10, f"\nFailed to send message\nchat_id = {chat_id}\n", '=' * 10, sep='')
 
 
-def send_document_with_retry(bot, chat_id: int, document, max_attempts: int, attempt=0) -> None:
+def send_document_with_retry(bot, chat_id: int, document, max_attempts: int = 10, delay: float = 1,
+                             attempt: int = 1) -> None:
     try:
         bot.send_document(chat_id=chat_id, document=document, caption="Готово!")
-        document.close()
         try:
+            document.close()
             os.remove(document.name)
         except Exception as e:
             print(e)
 
     except Exception as e:
         if attempt < max_attempts:
-            time.sleep(1)
+            time.sleep(delay)
             send_document_with_retry(bot=bot, chat_id=chat_id, document=document, max_attempts=max_attempts,
-                                     attempt=attempt + 1)
+                                     delay=delay, attempt=attempt + 1)
             print(e)
         else:
             print('=' * 10, f"\nFailed to send message\nchat_id = {chat_id}\n", '=' * 10, sep='')
