@@ -27,7 +27,6 @@ jobs:
 
       - name: Prepare VM
         run: |
-            apt update
             apt install -y libhdf4-dev
             apt install -y libgeos-dev
             apt install ffmpeg libsm6 libxext6  -y
