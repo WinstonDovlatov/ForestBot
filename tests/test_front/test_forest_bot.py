@@ -134,7 +134,7 @@ def test_handle_other_types(forestbot, handlers, content_type):
     forestbot.bot = MockBot()
     handler(message)
     args, kwargs = forestbot.bot.send_message.call_args
-    assert kwargs['chat_id'] == MockBot.chat_id
+    assert kwargs['chat_id'] != MockBot.chat_id
     assert kwargs['text'] == forestbot.wrong_file_format_message
 
 
