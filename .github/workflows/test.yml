@@ -5,40 +5,23 @@ on:
     branches:
       - '**'
   pull_request:
-    types: [opened, synchronize]
+    branches: [ main ]
 
 jobs:
 
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8]
-      fail-fast: false
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Prepare VM
+      - name: Build the Docker image
         run: |
-            apt install -y libhdf4-dev
-            apt install -y libgeos-dev
-            apt install ffmpeg libsm6 libxext6  -y
-            pip install torch~=1.13.1 torchvision~=0.14.1 --index-url https://download.pytorch.org/whl/cpu
-            conda install -c conda-forge geos
-            
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install git+https://github.com/NiroRNS/banet_v0.6_fix.git@v0.6
+          docker build -t forestbotimage .
 
-
-      - name: PyTest
-        run: |
-            pytest tests
+      - name: Run the tests
+        run: docker run forestbotimage pytest tests
