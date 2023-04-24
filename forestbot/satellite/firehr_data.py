@@ -4,7 +4,7 @@ import time
 
 import ee
 import os
-import configparser
+
 import requests
 import rasterio
 import pandas as pd
@@ -16,10 +16,6 @@ from banet.geo import open_tif, merge, Region
 from threading import Thread
 
 from tqdm.auto import tqdm
-
-config = configparser.ConfigParser()
-config.read(Path("credentials.ini"))
-ee.Initialize(project=config['GCLOUD']['project_name'])
 
 
 class RegionST(Region):
