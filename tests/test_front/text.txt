@@ -1,0 +1,10 @@
+[
+{'function': <function ForestBot.__add_handlers.<locals>.handle_threshold at 0x0000023A0FCDEC10>, 'pass_bot': False, 'filters': {'content_types': ['text'], 'commands': ['set_sensitivity']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_start_message at 0x0000023A0FCDECA0>, 'pass_bot': False, 'filters': {'content_types': ['text'], 'commands': ['start']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_help_message at 0x0000023A0FCDED30>, 'pass_bot': False, 'filters': {'content_types': ['text'], 'commands': ['help']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_change_radius_message at 0x0000023A0FCDEDC0>, 'pass_bot': False, 'filters': {'content_types': ['text'], 'commands': ['set_radius']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_other_types at 0x0000023A0FCDEE50>, 'pass_bot': False, 'filters': {'content_types': ['audio', 'sticker', 'video', 'video_note', 'voice', 'contact', 'web_app_data']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_photo_message at 0x0000023A0FCDEF70>, 'pass_bot': False, 'filters': {'content_types': ['photo']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_photo_message at 0x0000023A0FCDEF70>, 'pass_bot': False, 'filters': {'content_types': ['document']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_text_cords_message at 0x0000023A0FCDEEE0>, 'pass_bot': False, 'filters': {'content_types': ['text']}},
+{'function': <function ForestBot.__add_handlers.<locals>.handle_location_message at 0x0000023A0FCD8040>, 'pass_bot': False, 'filters': {'content_types': ['location']}}]

@@ -36,8 +36,6 @@ class ForestBot:
         config.read(Path("credentials.ini"))
 
         token = config['BOT']['bot_token']
-
-
         # TODO: save + load from save. make static?
         self.user_radiuses_deg = dict()
         self.user_thresholds = dict()
@@ -68,13 +66,9 @@ class ForestBot:
 
         @self.bot.message_handler(commands=['set_sensitivity'])
         def handle_threshold(message) -> None:
-            msg_wrong = "Для установки чувствительности введите число" \
-                        " в диапазоне от 0 до 1. Чем больше чувствительность, тем больше потенциальных дорог будет" \
-                        "обнаружено \n\nПример:\n/set_sensitivity 0.3"
             words = message.text.split(' ')
             if len(words) != 2 or not is_float(words[1]) or not 0 < float(words[1]) < 1:
-
-                self.send_text_message(message.chat.id, msg_wrong)
+                self.send_text_message(chat_id=message.chat.id, text=self.wrong_threshold)
             else:
                 # higher sensitivity => lower threshold
                 new_threshold = 1 - float(words[1])
@@ -91,14 +85,12 @@ class ForestBot:
 
         @self.bot.message_handler(commands=['set_radius'])
         def handle_change_radius_message(message) -> None:
-            wrong_command_message = "Для изменения радиуса снимка используйте команду таким образом:\n/set_radius " \
-                                    f"{{число в пределах [{ForestBot.min_radius_km}, {ForestBot.max_radius_km}]}}\n\n" \
-                                    "Пример:\n/set_radius 2.5"
+
             success, custom_radius = get_radius_from_msg(
                 message=message.text, min_value=ForestBot.min_radius_km, max_value=ForestBot.max_radius_km)
 
             if not success:
-                self.send_text_message(message.chat.id, wrong_command_message)
+                self.send_text_message(message.chat.id, self.wrong_change_radius_message)
             else:
                 self.user_radiuses_deg[message.chat.id] = convert_km_to_deg(custom_radius)
                 self.send_text_message(message.chat.id,
@@ -122,7 +114,7 @@ class ForestBot:
             else:  # document
                 file_id = message.document.file_id
                 file_format = message.document.mime_type.split('/')[1]
-                if not ForestBot.__is_correct_format(file_format):
+                if not ForestBot.is_correct_format(file_format):
                     self.send_text_message(message.chat.id, self.wrong_file_format_message)
                     return
 
@@ -157,7 +149,6 @@ class ForestBot:
 
         @self.bot.callback_query_handler(func=is_osm_call)
         def callback_for_osm(call):
-            # TODO: добавить устаревание
             chat_id = call.from_user.id
             msg_id = call.message.message_id
             date = call.message.date
@@ -318,6 +309,15 @@ class ForestBot:
         with open(msg_path / "help_message.txt", encoding="UTF-8") as f:
             self.help_message = f.read()
 
+        with open(msg_path / "wrong_threshold.txt", encoding="UTF-8") as f:
+            self.wrong_threshold = f.read()
+
+        self.wrong_change_radius_message = "Для изменения радиуса снимка используйте команду таким образом:\n" \
+                                           "/set_radius " \
+                                           f"{{число в пределах " \
+                                           f"[{ForestBot.min_radius_km}, {ForestBot.max_radius_km}]}}\n\n" \
+                                           "Пример:\n/set_radius 2.5"
+
     def __send_prediction_callback(self, result_path: Path, chat_id: int, mask: np.ndarray, image_name=None) -> None:
         """
         Callback for completed prediction.
@@ -388,10 +388,10 @@ class ForestBot:
         }).start()
 
     @classmethod
-    def __is_image_size_correct(cls, photo) -> bool:
+    def is_image_size_correct(cls, photo) -> bool:
         return (cls.min_photo_size <= photo[-1].width <= cls.max_photo_size) and (
                 cls.min_photo_size <= photo[-1].height <= cls.max_photo_size)
 
     @classmethod
-    def __is_correct_format(cls, file_format: str) -> bool:
+    def is_correct_format(cls, file_format: str) -> bool:
         return file_format in cls.valid_formats
