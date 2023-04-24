@@ -24,4 +24,7 @@ jobs:
           docker build -t forestbotimage .
 
       - name: Run the tests
-        run: docker run forestbotimage -с 'python generate_credentials.py 123 123 && pytest tests'
+        run: |
+          docker run -it -d --name test_container forestbotimage
+          docker exec -it test_container python generate_credentials.py 123 123
+          docker exec -it test_container pytest tests
