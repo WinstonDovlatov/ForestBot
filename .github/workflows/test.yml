@@ -33,6 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          sed -i '/from nbdev.imports import test_eq/d' /opt/conda/lib/python3.10/site-packages/banet/core.py
 
       - name: PyTest
         run: |
