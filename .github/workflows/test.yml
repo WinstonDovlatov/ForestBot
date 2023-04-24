@@ -25,6 +25,6 @@ jobs:
 
       - name: Run the tests
         run: |
-          docker run -it -d --name test_container forestbotimage
-          docker exec -it test_container python generate_credentials.py 123 123
-          docker exec -it test_container pytest tests
+          docker run -i -d --name test_container forestbotimage
+          docker exec test_container python generate_credentials.py 123 123
+          docker exec test_container pytest tests
