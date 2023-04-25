@@ -80,7 +80,7 @@
     
 2. Запустите контейнер
 
-    ```$ docker run -it --name forest_bot winstondovlatov/forestbot```
+    ```$ docker run -it --name forest_bot ghcr.io/winstondovlatov/forestbot:latest```
     
 3. Внутри котнейнера необходимо сгенирировать реквизиты
 
